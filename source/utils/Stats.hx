@@ -1,4 +1,4 @@
-package js;
+package utils;
 
 @:native("Stats")
 extern class Stats {
