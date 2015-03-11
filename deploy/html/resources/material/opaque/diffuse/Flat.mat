@@ -1,0 +1,7 @@
+<material id="haxor/material/opaque/diffuse/Flat" name="haxor/material/opaque/diffuse/Flat">
+	<queue offset="0">geometry</queue>
+	<shader>haxor/diffuse/Flat</shader>	
+	<uniforms>						
+		<color name="Tint">1.0 1.0 1.0 1.0</color>
+	</uniforms>	
+</material>

@@ -1,0 +1,9 @@
+<material id="haxor/material/opaque/diffuse/DiffuseSkin" name="haxor/material/opaque/diffuse/DiffuseSkin">
+	<queue offset="0">geometry</queue>
+	<shader>haxor/diffuse/ToonSkin</shader>
+	<lighting>true</lighting>
+	<cull>none</cull>
+	<uniforms>						
+		<color name="Tint">1.0 1.0 1.0 1.0</color>		
+	</uniforms>	
+</material>

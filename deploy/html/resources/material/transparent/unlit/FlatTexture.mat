@@ -1,0 +1,11 @@
+<material id="haxor/material/transparent/unlit/FlatTexture" name="haxor/material/transparent/unlit/FlatTexture">
+	<queue offset="0">transparent</queue>
+	<shader>haxor/unlit/FlatTexture</shader>
+	<blend enabled="true">
+		<src>SrcAlpha</src>
+		<dst>OneMinusSrcAlpha</dst>
+	</blend>	
+	<uniforms>						
+		<color name="Tint">1.0 1.0 1.0 1.0</color>		
+	</uniforms>	
+</material>

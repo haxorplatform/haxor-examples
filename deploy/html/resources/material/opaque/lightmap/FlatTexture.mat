@@ -1,0 +1,7 @@
+<material id="haxor/material/opaque/lightmap/FlatTexture" name="haxor/material/opaque/lightmap/FlatTexture">
+	<queue offset="0">geometry</queue>
+	<shader>haxor/lightmap/FlatTexture</shader>
+	<uniforms>						
+		<color name="Tint">1.0 1.0 1.0 1.0</color>		
+	</uniforms>	
+</material>

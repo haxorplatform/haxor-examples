@@ -1,0 +1,10 @@
+<material id="haxor/material/transparent/unlit/ParticleAdditive" name="haxor/material/transparent/unlit/ParticleAdditive">
+	<queue offset="500">transparent</queue>
+	<shader>haxor/unlit/Particle</shader>	
+	<blend enabled="true">
+		<src>SrcAlpha</src>
+		<dst>One</dst>
+	</blend>		
+	<cull>none</cull>
+	<zwrite>true</zwrite>
+</material>

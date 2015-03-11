@@ -4,7 +4,7 @@
   <output>
     <movie outputType="Application" />
     <movie input="" />
-    <movie path="..\deploy\html\dungeon-small\haxor-app.js" />
+    <movie path="..\..\deploy\html\js\dungeon-small\haxor-app.js" />
     <movie fps="0" />
     <movie width="0" />
     <movie height="0" />
@@ -16,7 +16,7 @@
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
     <class path="..\..\source" />
-    <class path="..\deploy" />
+    <class path="..\..\deploy\html" />
   </classpaths>
   <!-- Build options -->
   <build>
@@ -54,7 +54,7 @@
   <options>
     <option showHiddenPaths="False" />
     <option testMovie="Webserver" />
-    <option testMovieCommand="..\deploy\html\dungeon-small\index.html" />
+    <option testMovieCommand="..\..\deploy\html\dungeon-small.html" />
   </options>
   <!-- Plugin storage -->
   <storage />

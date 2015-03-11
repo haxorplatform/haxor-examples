@@ -1,0 +1,12 @@
+<material id="haxor/material/screen/Displacement" name="haxor/material/screen/Displacement">
+	<queue offset="0">transparent</queue>
+	<grab>true</grab>
+	<zwrite>false</zwrite>
+	<cull>none</cull>
+	<shader>haxor/screen/Displacement</shader>
+	<uniforms>						
+		<float name="Intensity">1.0</float>							<!-- values: [f f f f...]  -->			
+		<vec2 name="Offset">0.0 0.0</vec2>							<!-- values: [x y]  -->	
+		<vec2 name="Scale">1.0 1.0</vec2>							<!-- values: [x y]  -->			
+	</uniforms>
+</material>

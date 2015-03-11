@@ -1,0 +1,8 @@
+<material id="haxor/material/opaque/unlit/FlatTextureSkin" name="haxor/material/opaque/unlit/FlatTextureSkin">
+	<queue offset="0">geometry</queue>
+	<shader>haxor/unlit/FlatTextureSkin</shader>
+	<cull>none</cull>
+	<uniforms>						
+		<color name="Tint">1.0 1.0 1.0 1.0</color>		
+	</uniforms>	
+</material>

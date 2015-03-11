@@ -1,0 +1,24 @@
+<material id="haxor/material/Template" name="haxor/material/Template"> <!-- 'id' will be in the future a GUID for editor mode 'name' can be anything -->
+	<queue offset="0">geometry</queue> 								<!-- default: geometry + 0 values: [background,opaque,geometry,transparent,overlay,interface] == [0,1000,2000,3000,4000,5000] -->	
+	<shader>haxor/unlit/Flat</shader>  								<!-- default: haxor/unlit/Flat values: string id for shader (found in the shader file) -->
+	<ztest>true</ztest> 											<!-- default: true values: [true,false] -->
+	<zfunc>lessequal</zfunc>										<!-- default: lessequal values: [never,less,equal,lessequal,greater,notequal,greaterequal,always] -->
+	<zwrite>true</zwrite>											<!-- default: true values: [true,false] -->
+	<blend enabled="false">											<!-- default: enabled="false" values: true false -->
+		<src>one</src>												<!-- default: one  values: [zero,one,srccolor,oneminussrccolor,srcalpha,oneminussrcalpha,dstalpha,oneminusdstalpha,dstcolor,oneminusdstcolor,srcalphasaturate]  -->
+		<dst>zero</dst>												<!-- default: zero values: [zero,one,srccolor,oneminussrccolor,srcalpha,oneminussrcalpha,dstalpha,oneminusdstalpha,dstcolor,oneminusdstcolor,srcalphasaturate]  -->
+	</blend>	
+	<invert>false</invert>											<!-- default: false values: [true,false]  -->
+	<cull>back</cull>												<!-- default: back  values: [none,front,back]  -->	
+	<uniforms>						
+		<float name="UFloat">1.0</float>							<!-- values: [f f f f...]  -->	
+		<int name="UInt">10</int>									<!-- values: [i]  -->	
+		<vec2 name="UVec2">1.0 0.0</vec2>							<!-- values: [x y]  -->	
+		<vec3 name="UVec3">1.0 0.0 0.0</vec3>						<!-- values: [x y z]  -->
+		<vec4 name="UVec4">0.0 0.0 0.0 1.0</vec4>					<!-- values: [x y z w]  -->
+		<mat4 name="UMat4">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</mat4>	<!-- values: [m00 m01 m02..m33]  -->
+		<color name="UColor">1.0 1.0 1.0 1.0</color>				<!-- values: [r g b a]  -->
+		<texture name="UTexture">texture_id</texture>				<!-- values: string id of loaded textures  -->
+	</uniforms>
+	
+</material>

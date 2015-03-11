@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<skin id="haxor" root="https://dl.dropboxusercontent.com/u/20655747/haxor/resources/skins/haxor/">
+	
+	<text font="Open Sans" size="12" style="regular" color="0xdddddd" aligment="left" />
+	
+	<skin id="checkbox" smooth="0.2"/>
+	<image id="checkbox.none" src="checkbox/none.png"/>
+	<image id="checkbox.over" src="checkbox/over.png"/>
+	<image id="checkbox.down" src="checkbox/down.png"/>		
+	<image id="checkbox.toggle_none" src="checkbox/toggle_none.png"/>
+	<image id="checkbox.toggle_over" src="checkbox/toggle_over.png"/>
+	<image id="checkbox.toggle_down" src="checkbox/toggle_down.png"/>
+	
+	<filter id="button.label.filter">
+		<shadow y="1" color="0x333333" blur="1"/>		
+	</filter>
+		
+	<skin  id="button" width="80" height="30" smooth="0" />
+	<image id="button.none" src="button/none.png" slices="2" />
+	<image id="button.over" src="button/over.png" slices="2" />
+	<image id="button.down" src="button/down.png" slices="2" />
+	<text  id="button.label" font="Open Sans" color="0xeeeeee" size="12" style="regular" aligment="mc"/>
+	
+	<skin  id="tag" width="45" height="21" smooth="0" />
+	<image id="tag.none" src="tag/none.png" slices="3,9,0,0" />
+	<image id="tag.over" src="tag/over.png" slices="3,9,0,0" />
+	<image id="tag.down" src="tag/down.png" slices="3,9,0,0" />
+	<text  id="tag.label" font="Open Sans" color="0xeeeeee" size="12" style="regular" aligment="ml"/>
+	
+	
+	<image id="slider.track.none" src="slider/track/none.png" 	  slices="4" />	
+	<image id="slider.track.down" src="slider/track/down.png" 	  slices="4" />		
+	<image id="slider.fill" 	  src="slider/track/fill.png" 	  slices="4" />
+	<image id="slider.buffer" 	  src="slider/track/buffer.png"   slices="4" />	
+	<image id="slider.drag.none"  src="slider/drag/none.png"  	  slices="4" />
+	<image id="slider.drag.over"  src="slider/drag/over.png"  	  slices="4" />
+	<image id="slider.drag.down"  src="slider/drag/down.png"  	  slices="4" />
+	
+	<image id="text_input.none" src="text_input/none.png" slices="4" />
+	<image id="text_input.over" src="text_input/over.png" slices="4" />
+	<image id="text_input.down" src="text_input/down.png" slices="4" />
+	<text  id="text_input.field" font="Open Sans" color="0x0" size="10" style="regular" aligment="l"/>
+	
+</skin>

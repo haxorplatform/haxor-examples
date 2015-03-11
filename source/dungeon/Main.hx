@@ -181,28 +181,6 @@ class Main extends Application implements IUpdateable implements IRenderable
 		game = (new Entity("game")).AddComponent(GameController);
 		game.Initialize();
 		
-		skm0 = Material.Transparent(Asset.Get("human/diffuse"));
-		skm0.shader = Shader.FlatTextureSkin;
-		for (i in 0...0)
-		{
-			Add();
-		}		
-		/*
-		var e : Entity = new Entity("sphere");
-		e.transform.parent = game.player.transform;
-		e.transform.localScale = new Vector3(50, 50, 50);		
-		var mr : MeshRenderer = e.AddComponent(MeshRenderer);
-		mr.mesh = Model.sphere;
-		mr.material = Material.Opaque();
-		mr.material.lighting = true;
-		mr.material.shader = new FlexShader("000");
-		trace(mr.material.shader);		
-		mr.material.SetTexture("RampTexture", Asset.Get("player/ramp"));
-		mr.material.SetFloat("Shininess", 10.0);
-		mr.material.SetFloat("Cutoff", 0.5);
-		mr.material.SetFloat3("UVSpeed",0.05,0.02,0.0);
-		mr.material.SetTexture("DiffuseTexture", Texture2D.random);
-		//*/
 	}
 	
 	var skm0 : Material;
@@ -390,7 +368,8 @@ class Main extends Application implements IUpdateable implements IRenderable
 	 */
 	override public function Load():Bool 
 	{	
-		Web.root = "http://www.haxor.xyz/resources/";
+		//Web.root = "http://www.haxor.xyz/resources/";
+		Web.root = "resources/";
 		
 		var is_fast : Bool = false;
 		
@@ -407,9 +386,6 @@ class Main extends Application implements IUpdateable implements IRenderable
 		Asset.LoadCollada("skeleton", "./character/skeleton/grunt/model.DAE");
 		Asset.LoadCollada("skeleton/idle","./character/skeleton/grunt/animation_idle01.DAE");
 		Asset.LoadTexture2D("skeleton/diffuse", "./character/skeleton/grunt/DiffuseTexture.png");
-		
-		Asset.LoadCollada("human", "assets/human/asset.dae");		
-		Asset.LoadTexture2D("human/diffuse", "assets/human/DiffuseTexture.jpg");
 		
 		/*
 		Asset.LoadCollada("wizard", 			 "./character/medieval/wizard/asset.dae");

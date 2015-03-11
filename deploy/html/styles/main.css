@@ -32,13 +32,15 @@ body
 	width:100%;
 	height:100%;
 }
+
 body
 {
 	font-family:arial, helvetica, sans-serif;
 	color:#fff;
 	font-size:14px;
-	background:#28292b;
+	background:#000;
 }
+
 #loader
 {
 	position:fixed;
@@ -63,7 +65,7 @@ body
 	left:50%;
 	margin-left:-30px;
 	margin-top:-50px;
-	background:url('../assets/img/loader-logo.png');
+	background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAACXBIWXMAAAsTAAALEwEAmpwYAAABNmlDQ1BQaG90b3Nob3AgSUNDIHByb2ZpbGUAAHjarY6xSsNQFEDPi6LiUCsEcXB4kygotupgxqQtRRCs1SHJ1qShSmkSXl7VfoSjWwcXd7/AyVFwUPwC/0Bx6uAQIYODCJ7p3MPlcsGo2HWnYZRhEGvVbjrS9Xw5+8QMUwDQCbPUbrUOAOIkjvjB5ysC4HnTrjsN/sZ8mCoNTIDtbpSFICpA/0KnGsQYMIN+qkHcAaY6addAPAClXu4vQCnI/Q0oKdfzQXwAZs/1fDDmADPIfQUwdXSpAWpJOlJnvVMtq5ZlSbubBJE8HmU6GmRyPw4TlSaqo6MukP8HwGK+2G46cq1qWXvr/DOu58vc3o8QgFh6LFpBOFTn3yqMnd/n4sZ4GQ5vYXpStN0ruNmAheuirVahvAX34y/Axk/96FpPYgAAACBjSFJNAAB6JQAAgIMAAPn/AACA6AAAUggAARVYAAA6lwAAF2/XWh+QAAADVUlEQVR42uSb20sVURSHv3NKLQ0i76URRXlL0zSFMIweCovegl77TxKC/oLorcfyoV59qSACK8MkFctLF4ywlI6VpXnP1cOsk+Nh5uiMB3Tv84Nh7sP59tpr9tpn1oqICOmkqK47gdtAg4WMjcAt4DkAIoKI3JdVdYnIDRFp0nMmLg0i0iYir1xc90SEiHbpE0C/R+sMAA+BJ8AzYHqbWnEPcAY4B7QqT6KqgKGIy4cHgcokD/0BdANdwGugF/iyRYAlQC1wUkEbgbwk1/cDdQA7XQfvAjeT3JSrrdeq+0vaSG+AIeAd8AEYA2IpAisASoHDQJlargKoBjICPOdBfMNt4XJgOAU/claBx4GvwG9gSpcZ4C+wAoi+NDOAbCAf2AvkKGQhUKTnNqsaNcwaYNRKxyx7S49or1gzLMXVYeGw1OE1Dsf1yELgx+6dxC69G/iuaxs0q2/veT8Lz/2PSOxQpxvWCzh+kS164RdLu9VjEXD3RoB7LYFd0YhwXeBx4L0l4++3jQB7dgUD1ZNsPuzVOjZYOK2Ah4MAf7QAeDQI8OfEAdsw/QkKHAMmDQaeBH4GAUYn8qZqwu9ENMxNBmgsDPC0wcALYYBjBgNPhQGeSjcfnjUYeD4M8LLBwEthgFcMBl4OA2zlZ8VoyHPbXTvCQGUZDJwZBnhXugHvMxi4KAxwgcHAuWGATf76kBUGuNRg4NIwwPsNBi4OCpxnuA8X+vmxH/Ahw304WxkCAZuuo0GAyy0ALgsCXGUBcEUQYBtSED0ZIh7JpYU4XxCjhgOLhpix9SxcbwEsQATNvlsP+JRF8/3GjQC3WAR8dj0fzsJJW8qxBHhWI64FPwu3WAQbj7haknXpC9inS8mAL1sIfNHPhytx8p83q2mc77MTOp7PAL/02BywiJNCHG/wTHWjPFbTh0t0tlacIherRFMg3AniVwM+ZFEbaAR4q9ujwCec7PlUKB84CBzR+L5aw95KkvxR56EraPK728JDfvGnyl0C0AP04SSAb4UOaFBRD5wGmrRx/DSA1kHEgav1YKL6cFKKn7K9izxygGbgvC61HtccBwbjZS/tCWU8bSJSZ3AZT42IXBeRly6udncZT6da8w7e5Tymh5fXcCpgmiPpVor3bwCZty6+h6Q8GgAAAABJRU5ErkJggg==');	
 }
 #loader span.bar
 {
@@ -86,6 +88,24 @@ body
 	border-radius:5px;
 	background:#fff;
 	border:2px solid #424345;	
+}
+
+#container
+{
+	position:absolute; 
+	background-color: #333; 
+	left:0px; 
+	top:0px;	
+}
+
+#field
+{
+	position:absolute; 
+	left: 90px; 
+	top:2px; 
+	color: #ffff00; 
+	font-size:14px; 
+	font-family:Verdana;
 }
 
 /* ----------------------------------------------------------------------------------------------------------- */
