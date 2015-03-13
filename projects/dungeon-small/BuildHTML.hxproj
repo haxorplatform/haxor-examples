@@ -12,15 +12,17 @@
     <movie minorVersion="0" />
     <movie platform="JavaScript" />
     <movie background="#FFFFFF" />
+    <movie preferredSDK="Haxe 3.2.0;3.2.0;" />
   </output>
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
+    <class path="." />
     <class path="..\..\source" />
-    <class path="..\..\deploy\html" />
+    <class path="..\..\deploy" />
   </classpaths>
   <!-- Build options -->
   <build>
-    <option directives="html&#xA;profile&#xA;js-es5&#xA;js-flatten&#xA;dce" />
+    <option directives="html&#xA;profile&#xA;js-es5&#xA;js-flatten" />
     <option flashStrict="False" />
     <option noInlineOnDebug="False" />
     <option mainClass="dungeon.Main" />
@@ -40,7 +42,8 @@
     <compile path="source\examples\curves\Main.hx" />
     <compile path="source\Main.hx" />
     <compile path="Main.hx" />
-    <compile path="..\..\source\dungeon\Main.hx" />
+    <compile path="MainHTML.hx" />
+    <compile path="dungeon\Main.hx" />
   </compileTargets>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>

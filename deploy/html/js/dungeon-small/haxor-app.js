@@ -1,5 +1,5 @@
 (function () { "use strict";
-var $hxClasses = {};
+var $hxClasses = {},$estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -58,9 +58,6 @@ HxOverrides.iter = function(a) {
 		return this.arr[this.cur++];
 	}};
 };
-var IMap = function() { };
-$hxClasses["IMap"] = IMap;
-IMap.__name__ = ["IMap"];
 Math.__name__ = ["Math"];
 var Reflect = function() { };
 $hxClasses["Reflect"] = Reflect;
@@ -153,12 +150,9 @@ StringTools.fastCodeAt = function(s,index) {
 var Type = function() { };
 $hxClasses["Type"] = Type;
 Type.__name__ = ["Type"];
-Type.getClass = function(o) {
-	if(o == null) return null;
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
-};
 Type.getClassName = function(c) {
 	var a = c.__name__;
+	if(a == null) return null;
 	return a.join(".");
 };
 Type.resolveClass = function(name) {
@@ -192,8 +186,10 @@ Type.createInstance = function(cl,args) {
 	}
 	return null;
 };
-var XmlType = { __ename__ : true, __constructs__ : [] };
-var Xml = function() {
+var Xml = function(nodeType) {
+	this.nodeType = nodeType;
+	this.children = [];
+	this.attributeMap = new haxe_ds_StringMap();
 };
 $hxClasses["Xml"] = Xml;
 Xml.__name__ = ["Xml"];
@@ -201,197 +197,128 @@ Xml.parse = function(str) {
 	return haxe_xml_Parser.parse(str);
 };
 Xml.createElement = function(name) {
-	var r = new Xml();
-	r.nodeType = Xml.Element;
-	r._children = new Array();
-	r._attributes = new haxe_ds_StringMap();
-	r.set_nodeName(name);
-	return r;
+	var xml = new Xml(Xml.Element);
+	if(xml.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + xml.nodeType;
+	xml.nodeName = name;
+	return xml;
 };
 Xml.createPCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.PCData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.PCData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw "Bad node type, unexpected " + xml.nodeType;
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createCData = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.CData;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.CData);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw "Bad node type, unexpected " + xml.nodeType;
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createComment = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.Comment;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.Comment);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw "Bad node type, unexpected " + xml.nodeType;
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocType = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.DocType;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.DocType);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw "Bad node type, unexpected " + xml.nodeType;
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createProcessingInstruction = function(data) {
-	var r = new Xml();
-	r.nodeType = Xml.ProcessingInstruction;
-	r.set_nodeValue(data);
-	return r;
+	var xml = new Xml(Xml.ProcessingInstruction);
+	if(xml.nodeType == Xml.Document || xml.nodeType == Xml.Element) throw "Bad node type, unexpected " + xml.nodeType;
+	xml.nodeValue = data;
+	return xml;
 };
 Xml.createDocument = function() {
-	var r = new Xml();
-	r.nodeType = Xml.Document;
-	r._children = new Array();
-	return r;
+	return new Xml(Xml.Document);
 };
 Xml.prototype = {
-	get_nodeName: function() {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName;
-	}
-	,set_nodeName: function(n) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._nodeName = n;
-	}
-	,get_nodeValue: function() {
-		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-		return this._nodeValue;
-	}
-	,set_nodeValue: function(v) {
-		if(this.nodeType == Xml.Element || this.nodeType == Xml.Document) throw "bad nodeType";
-		return this._nodeValue = v;
+	get_nodeValue: function() {
+		if(this.nodeType == Xml.Document || this.nodeType == Xml.Element) throw "Bad node type, unexpected " + this.nodeType;
+		return this.nodeValue;
 	}
 	,get: function(att) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._attributes.get(att);
+		if(this.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + this.nodeType;
+		return this.attributeMap.get(att);
 	}
 	,set: function(att,value) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		this._attributes.set(att,value);
+		if(this.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + this.nodeType;
+		this.attributeMap.set(att,value);
 	}
 	,exists: function(att) {
-		if(this.nodeType != Xml.Element) throw "bad nodeType";
-		return this._attributes.exists(att);
+		if(this.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + this.nodeType;
+		return this.attributeMap.exists(att);
 	}
-	,iterator: function() {
-		if(this._children == null) throw "bad nodetype";
-		return { cur : 0, x : this._children, hasNext : function() {
-			return this.cur < this.x.length;
-		}, next : function() {
-			return this.x[this.cur++];
-		}};
+	,attributes: function() {
+		if(this.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + this.nodeType;
+		return this.attributeMap.keys();
 	}
 	,elements: function() {
-		if(this._children == null) throw "bad nodetype";
-		return { cur : 0, x : this._children, hasNext : function() {
-			var k = this.cur;
-			var l = this.x.length;
-			while(k < l) {
-				if(this.x[k].nodeType == Xml.Element) break;
-				k += 1;
-			}
-			this.cur = k;
-			return k < l;
-		}, next : function() {
-			var k1 = this.cur;
-			var l1 = this.x.length;
-			while(k1 < l1) {
-				var n = this.x[k1];
-				k1 += 1;
-				if(n.nodeType == Xml.Element) {
-					this.cur = k1;
-					return n;
-				}
-			}
-			return null;
-		}};
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		var ret;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.children;
+		while(_g1 < _g2.length) {
+			var child = _g2[_g1];
+			++_g1;
+			if(child.nodeType == Xml.Element) _g.push(child);
+		}
+		ret = _g;
+		return HxOverrides.iter(ret);
 	}
 	,elementsNamed: function(name) {
-		if(this._children == null) throw "bad nodetype";
-		return { cur : 0, x : this._children, hasNext : function() {
-			var k = this.cur;
-			var l = this.x.length;
-			while(k < l) {
-				var n = this.x[k];
-				if(n.nodeType == Xml.Element && n._nodeName == name) break;
-				k++;
-			}
-			this.cur = k;
-			return k < l;
-		}, next : function() {
-			var k1 = this.cur;
-			var l1 = this.x.length;
-			while(k1 < l1) {
-				var n1 = this.x[k1];
-				k1++;
-				if(n1.nodeType == Xml.Element && n1._nodeName == name) {
-					this.cur = k1;
-					return n1;
-				}
-			}
-			return null;
-		}};
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		var ret;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.children;
+		while(_g1 < _g2.length) {
+			var child = _g2[_g1];
+			++_g1;
+			if(child.nodeType == Xml.Element && (function($this) {
+				var $r;
+				if(child.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + child.nodeType;
+				$r = child.nodeName;
+				return $r;
+			}(this)) == name) _g.push(child);
+		}
+		ret = _g;
+		return HxOverrides.iter(ret);
 	}
 	,firstChild: function() {
-		if(this._children == null) throw "bad nodetype";
-		return this._children[0];
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		return this.children[0];
 	}
 	,firstElement: function() {
-		if(this._children == null) throw "bad nodetype";
-		var cur = 0;
-		var l = this._children.length;
-		while(cur < l) {
-			var n = this._children[cur];
-			if(n.nodeType == Xml.Element) return n;
-			cur++;
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			if(child.nodeType == Xml.Element) return child;
 		}
 		return null;
 	}
 	,addChild: function(x) {
-		if(this._children == null) throw "bad nodetype";
-		if(x._parent != null) HxOverrides.remove(x._parent._children,x);
-		x._parent = this;
-		this._children.push(x);
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		if(x.parent == this) return; else if(x.parent != null) x.parent.removeChild(x);
+		this.children.push(x);
+		x.parent = this;
+	}
+	,removeChild: function(x) {
+		if(this.nodeType != Xml.Document && this.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + this.nodeType;
+		return HxOverrides.remove(this.children,x);
 	}
 	,toString: function() {
-		if(this.nodeType == Xml.PCData) return StringTools.htmlEscape(this._nodeValue);
-		if(this.nodeType == Xml.CData) return "<![CDATA[" + this._nodeValue + "]]>";
-		if(this.nodeType == Xml.Comment) return "<!--" + this._nodeValue + "-->";
-		if(this.nodeType == Xml.DocType) return "<!DOCTYPE " + this._nodeValue + ">";
-		if(this.nodeType == Xml.ProcessingInstruction) return "<?" + this._nodeValue + "?>";
-		var s = new StringBuf();
-		if(this.nodeType == Xml.Element) {
-			s.b += "<";
-			s.b += Std.string(this._nodeName);
-			var $it0 = this._attributes.keys();
-			while( $it0.hasNext() ) {
-				var k = $it0.next();
-				s.b += " ";
-				if(k == null) s.b += "null"; else s.b += "" + k;
-				s.b += "=\"";
-				s.add(this._attributes.get(k));
-				s.b += "\"";
-			}
-			if(this._children.length == 0) {
-				s.b += "/>";
-				return s.b;
-			}
-			s.b += ">";
-		}
-		var $it1 = this.iterator();
-		while( $it1.hasNext() ) {
-			var x = $it1.next();
-			s.add(x.toString());
-		}
-		if(this.nodeType == Xml.Element) {
-			s.b += "</";
-			s.b += Std.string(this._nodeName);
-			s.b += ">";
-		}
-		return s.b;
+		return haxe_xml_Printer.print(this);
 	}
 	,__class__: Xml
-	,__properties__: {set_nodeValue:"set_nodeValue",get_nodeValue:"get_nodeValue",set_nodeName:"set_nodeName",get_nodeName:"get_nodeName"}
+	,__properties__: {get_nodeValue:"get_nodeValue"}
 };
 var haxor_core_IDisposable = function() { };
 $hxClasses["haxor.core.IDisposable"] = haxor_core_IDisposable;
@@ -408,7 +335,7 @@ var haxor_core_Resource = function(p_name) {
 	this.__pid = [-1,-1,-1,-1,-1,-1,-1,-1,-1];
 	this.m_name = p_name;
 	this.m_is_behaviour = js_Boot.__instanceof(this,haxor_component_Behaviour);
-	this.m_type_class = Type.getClass(this);
+	this.m_type_class = js_Boot.getClass(this);
 	this.m_type_full_name = Type.getClassName(this.m_type_class);
 	var nt = this.m_type_full_name.split(".");
 	nt.reverse();
@@ -1548,7 +1475,7 @@ dungeon_Main.prototype = $extend(haxor_core_Application.prototype,{
 		if(haxor_input_Input.Down(haxor_input_KeyCode.P)) coi.set_enabled(!coi.get_enabled());
 		if(haxor_input_Input.Down(haxor_input_KeyCode.D1)) {
 			this.debug = !this.debug;
-			if(!this.debug) this.field.innerText = "";
+			if(!this.debug) this.field.textContent = "";
 			if(this.debug) this.ui.domElement.style.display = "block"; else this.ui.domElement.style.display = "none";
 		}
 		if(haxor_input_Input.Down(haxor_input_KeyCode.O)) this.Add();
@@ -1935,6 +1862,18 @@ dungeon_ParticleTorch.prototype = $extend(haxor_component_ParticleRenderer.proto
 	,__class__: dungeon_ParticleTorch
 	,__properties__: $extend(haxor_component_ParticleRenderer.prototype.__properties__,{set_strength:"set_strength",get_strength:"get_strength"})
 });
+var haxe_IMap = function() { };
+$hxClasses["haxe.IMap"] = haxe_IMap;
+haxe_IMap.__name__ = ["haxe","IMap"];
+var haxe__$Int64__$_$_$Int64 = function(high,low) {
+	this.high = high;
+	this.low = low;
+};
+$hxClasses["haxe._Int64.___Int64"] = haxe__$Int64__$_$_$Int64;
+haxe__$Int64__$_$_$Int64.__name__ = ["haxe","_Int64","___Int64"];
+haxe__$Int64__$_$_$Int64.prototype = {
+	__class__: haxe__$Int64__$_$_$Int64
+};
 var haxe_Timer = function(time_ms) {
 	var me = this;
 	this.id = setInterval(function() {
@@ -1964,23 +1903,18 @@ haxe_Timer.prototype = {
 	}
 	,__class__: haxe_Timer
 };
-var haxe_io_Bytes = function(length,b) {
-	this.length = length;
-	this.b = b;
+var haxe_io_Bytes = function(b) {
+	this.length = b.byteLength;
+	this.b = new Uint8Array(b);
+	b.hxBytes = this;
 };
 $hxClasses["haxe.io.Bytes"] = haxe_io_Bytes;
 haxe_io_Bytes.__name__ = ["haxe","io","Bytes"];
 haxe_io_Bytes.alloc = function(length) {
-	var a = new Array();
-	var _g = 0;
-	while(_g < length) {
-		var i = _g++;
-		a.push(0);
-	}
-	return new haxe_io_Bytes(length,a);
+	return new haxe_io_Bytes(new ArrayBuffer(length));
 };
 haxe_io_Bytes.ofString = function(s) {
-	var a = new Array();
+	var a = [];
 	var i = 0;
 	while(i < s.length) {
 		var c = StringTools.fastCodeAt(s,i++);
@@ -1999,7 +1933,7 @@ haxe_io_Bytes.ofString = function(s) {
 			a.push(128 | c & 63);
 		}
 	}
-	return new haxe_io_Bytes(a.length,a);
+	return new haxe_io_Bytes(new Uint8Array(a).buffer);
 };
 haxe_io_Bytes.prototype = {
 	get: function(pos) {
@@ -2045,11 +1979,15 @@ haxe_crypto_Base64.encode = function(bytes,complement) {
 	if(complement == null) complement = true;
 	var str = new haxe_crypto_BaseCode(haxe_crypto_Base64.BYTES).encodeBytes(bytes).toString();
 	if(complement) {
-		var _g1 = 0;
-		var _g = (3 - bytes.length * 4 % 3) % 3;
-		while(_g1 < _g) {
-			var i = _g1++;
+		var _g = bytes.length % 3;
+		switch(_g) {
+		case 1:
+			str += "==";
+			break;
+		case 2:
 			str += "=";
+			break;
+		default:
 		}
 	}
 	return str;
@@ -2093,7 +2031,7 @@ haxe_crypto_BaseCode.prototype = {
 		return out;
 	}
 	,initTable: function() {
-		var tbl = new Array();
+		var tbl = [];
 		var _g = 0;
 		while(_g < 256) {
 			var i = _g++;
@@ -2138,18 +2076,9 @@ var haxe_ds_IntMap = function() {
 };
 $hxClasses["haxe.ds.IntMap"] = haxe_ds_IntMap;
 haxe_ds_IntMap.__name__ = ["haxe","ds","IntMap"];
-haxe_ds_IntMap.__interfaces__ = [IMap];
+haxe_ds_IntMap.__interfaces__ = [haxe_IMap];
 haxe_ds_IntMap.prototype = {
-	set: function(key,value) {
-		this.h[key] = value;
-	}
-	,get: function(key) {
-		return this.h[key];
-	}
-	,exists: function(key) {
-		return this.h.hasOwnProperty(key);
-	}
-	,__class__: haxe_ds_IntMap
+	__class__: haxe_ds_IntMap
 };
 var haxe_ds_ObjectMap = function() {
 	this.h = { };
@@ -2157,7 +2086,7 @@ var haxe_ds_ObjectMap = function() {
 };
 $hxClasses["haxe.ds.ObjectMap"] = haxe_ds_ObjectMap;
 haxe_ds_ObjectMap.__name__ = ["haxe","ds","ObjectMap"];
-haxe_ds_ObjectMap.__interfaces__ = [IMap];
+haxe_ds_ObjectMap.__interfaces__ = [haxe_IMap];
 haxe_ds_ObjectMap.prototype = {
 	set: function(key,value) {
 		var id = key.__id__ || (key.__id__ = ++haxe_ds_ObjectMap.count);
@@ -2187,71 +2116,151 @@ haxe_ds_ObjectMap.prototype = {
 	}
 	,__class__: haxe_ds_ObjectMap
 };
+var haxe_ds__$StringMap_StringMapIterator = function(map,keys) {
+	this.map = map;
+	this.keys = keys;
+	this.index = 0;
+	this.count = keys.length;
+};
+$hxClasses["haxe.ds._StringMap.StringMapIterator"] = haxe_ds__$StringMap_StringMapIterator;
+haxe_ds__$StringMap_StringMapIterator.__name__ = ["haxe","ds","_StringMap","StringMapIterator"];
+haxe_ds__$StringMap_StringMapIterator.prototype = {
+	hasNext: function() {
+		return this.index < this.count;
+	}
+	,next: function() {
+		return this.map.get(this.keys[this.index++]);
+	}
+	,__class__: haxe_ds__$StringMap_StringMapIterator
+};
 var haxe_ds_StringMap = function() {
 	this.h = { };
 };
 $hxClasses["haxe.ds.StringMap"] = haxe_ds_StringMap;
 haxe_ds_StringMap.__name__ = ["haxe","ds","StringMap"];
-haxe_ds_StringMap.__interfaces__ = [IMap];
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
 haxe_ds_StringMap.prototype = {
 	set: function(key,value) {
-		this.h["$" + key] = value;
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
 	}
 	,get: function(key) {
-		return this.h["$" + key];
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
 	}
 	,exists: function(key) {
-		return this.h.hasOwnProperty("$" + key);
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
 	}
 	,remove: function(key) {
-		key = "$" + key;
-		if(!this.h.hasOwnProperty(key)) return false;
-		delete(this.h[key]);
-		return true;
+		if(__map_reserved[key] != null) {
+			key = "$" + key;
+			if(this.rh == null || !this.rh.hasOwnProperty(key)) return false;
+			delete(this.rh[key]);
+			return true;
+		} else {
+			if(!this.h.hasOwnProperty(key)) return false;
+			delete(this.h[key]);
+			return true;
+		}
 	}
 	,keys: function() {
-		var a = [];
+		var _this = this.arrayKeys();
+		return HxOverrides.iter(_this);
+	}
+	,arrayKeys: function() {
+		var out = [];
 		for( var key in this.h ) {
-		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
+		if(this.h.hasOwnProperty(key)) out.push(key);
 		}
-		return HxOverrides.iter(a);
+		if(this.rh != null) {
+			for( var key in this.rh ) {
+			if(key.charCodeAt(0) == 36) out.push(key.substr(1));
+			}
+		}
+		return out;
 	}
 	,iterator: function() {
-		return { ref : this.h, it : this.keys(), hasNext : function() {
-			return this.it.hasNext();
-		}, next : function() {
-			var i = this.it.next();
-			return this.ref["$" + i];
-		}};
+		return new haxe_ds__$StringMap_StringMapIterator(this,this.arrayKeys());
 	}
 	,__class__: haxe_ds_StringMap
 };
-var haxe_io_Eof = function() { };
-$hxClasses["haxe.io.Eof"] = haxe_io_Eof;
-haxe_io_Eof.__name__ = ["haxe","io","Eof"];
-haxe_io_Eof.prototype = {
-	toString: function() {
-		return "Eof";
-	}
-	,__class__: haxe_io_Eof
-};
 var haxe_io_Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
 haxe_io_Error.Blocked = ["Blocked",0];
+haxe_io_Error.Blocked.toString = $estr;
 haxe_io_Error.Blocked.__enum__ = haxe_io_Error;
 haxe_io_Error.Overflow = ["Overflow",1];
+haxe_io_Error.Overflow.toString = $estr;
 haxe_io_Error.Overflow.__enum__ = haxe_io_Error;
 haxe_io_Error.OutsideBounds = ["OutsideBounds",2];
+haxe_io_Error.OutsideBounds.toString = $estr;
 haxe_io_Error.OutsideBounds.__enum__ = haxe_io_Error;
-haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; return $x; };
+haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; $x.toString = $estr; return $x; };
+var haxe_io_FPHelper = function() { };
+$hxClasses["haxe.io.FPHelper"] = haxe_io_FPHelper;
+haxe_io_FPHelper.__name__ = ["haxe","io","FPHelper"];
+haxe_io_FPHelper.i32ToFloat = function(i) {
+	var sign = 1 - (i >>> 31 << 1);
+	var exp = i >>> 23 & 255;
+	var sig = i & 8388607;
+	if(sig == 0 && exp == 0) return 0.0;
+	return sign * (1 + Math.pow(2,-23) * sig) * Math.pow(2,exp - 127);
+};
+haxe_io_FPHelper.floatToI32 = function(f) {
+	if(f == 0) return 0;
+	var af;
+	if(f < 0) af = -f; else af = f;
+	var exp = Math.floor(Math.log(af) / 0.6931471805599453);
+	if(exp < -127) exp = -127; else if(exp > 128) exp = 128;
+	var sig = Math.round((af / Math.pow(2,exp) - 1) * 8388608) & 8388607;
+	return (f < 0?-2147483648:0) | exp + 127 << 23 | sig;
+};
+haxe_io_FPHelper.i64ToDouble = function(low,high) {
+	var sign = 1 - (high >>> 31 << 1);
+	var exp = (high >> 20 & 2047) - 1023;
+	var sig = (high & 1048575) * 4294967296. + (low >>> 31) * 2147483648. + (low & 2147483647);
+	if(sig == 0 && exp == -1023) return 0.0;
+	return sign * (1.0 + Math.pow(2,-52) * sig) * Math.pow(2,exp);
+};
+haxe_io_FPHelper.doubleToI64 = function(v) {
+	var i64 = haxe_io_FPHelper.i64tmp;
+	if(v == 0) {
+		i64.low = 0;
+		i64.high = 0;
+	} else {
+		var av;
+		if(v < 0) av = -v; else av = v;
+		var exp = Math.floor(Math.log(av) / 0.6931471805599453);
+		var sig;
+		var v1 = (av / Math.pow(2,exp) - 1) * 4503599627370496.;
+		sig = Math.round(v1);
+		var sig_l = sig | 0;
+		var sig_h = sig / 4294967296.0 | 0;
+		i64.low = sig_l;
+		i64.high = (v < 0?-2147483648:0) | exp + 1023 << 20 | sig_h;
+	}
+	return i64;
+};
 var haxe_xml_Parser = function() { };
 $hxClasses["haxe.xml.Parser"] = haxe_xml_Parser;
 haxe_xml_Parser.__name__ = ["haxe","xml","Parser"];
-haxe_xml_Parser.parse = function(str) {
+haxe_xml_Parser.parse = function(str,strict) {
+	if(strict == null) strict = false;
 	var doc = Xml.createDocument();
-	haxe_xml_Parser.doParse(str,0,doc);
+	haxe_xml_Parser.doParse(str,strict,0,doc);
 	return doc;
 };
-haxe_xml_Parser.doParse = function(str,p,parent) {
+haxe_xml_Parser.doParse = function(str,strict,p,parent) {
 	if(p == null) p = 0;
 	var xml = null;
 	var state = 1;
@@ -2262,6 +2271,8 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 	var nbrackets = 0;
 	var c = str.charCodeAt(p);
 	var buf = new StringBuf();
+	var escapeNext = 1;
+	var attrValQuote = -1;
 	while(!(c != c)) {
 		switch(state) {
 		case 0:
@@ -2287,7 +2298,8 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 			break;
 		case 13:
 			if(c == 60) {
-				var child = Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start));
+				buf.addSub(str,start,p - start);
+				var child = Xml.createPCData(buf.b);
 				buf = new StringBuf();
 				parent.addChild(child);
 				nsubs++;
@@ -2296,7 +2308,7 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 			} else if(c == 38) {
 				buf.addSub(str,start,p - start);
 				state = 18;
-				next = 13;
+				escapeNext = 13;
 				start = p + 1;
 			}
 			break;
@@ -2396,23 +2408,56 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 		case 7:
 			switch(c) {
 			case 34:case 39:
+				buf = new StringBuf();
 				state = 8;
-				start = p;
+				start = p + 1;
+				attrValQuote = c;
 				break;
 			default:
 				throw "Expected \"";
 			}
 			break;
 		case 8:
-			if(c == str.charCodeAt(start)) {
-				var val = HxOverrides.substr(str,start + 1,p - start - 1);
-				xml.set(aname,val);
-				state = 0;
-				next = 4;
+			switch(c) {
+			case 38:
+				buf.addSub(str,start,p - start);
+				state = 18;
+				escapeNext = 8;
+				start = p + 1;
+				break;
+			case 62:
+				if(strict) throw "Invalid unescaped " + String.fromCharCode(c) + " in attribute value"; else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val);
+					state = 0;
+					next = 4;
+				}
+				break;
+			case 60:
+				if(strict) throw "Invalid unescaped " + String.fromCharCode(c) + " in attribute value"; else if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val1 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val1);
+					state = 0;
+					next = 4;
+				}
+				break;
+			default:
+				if(c == attrValQuote) {
+					buf.addSub(str,start,p - start);
+					var val2 = buf.b;
+					buf = new StringBuf();
+					xml.set(aname,val2);
+					state = 0;
+					next = 4;
+				}
 			}
 			break;
 		case 9:
-			p = haxe_xml_Parser.doParse(str,p,xml);
+			p = haxe_xml_Parser.doParse(str,strict,p,xml);
 			start = p;
 			state = 1;
 			break;
@@ -2438,7 +2483,17 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 			if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45)) {
 				if(start == p) throw "Expected node name";
 				var v = HxOverrides.substr(str,start,p - start);
-				if(v != parent.get_nodeName()) throw "Expected </" + parent.get_nodeName() + ">";
+				if(v != (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + parent.nodeType;
+					$r = parent.nodeName;
+					return $r;
+				}(this))) throw "Expected </" + (function($this) {
+					var $r;
+					if(parent.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + parent.nodeType;
+					$r = parent.nodeName;
+					return $r;
+				}(this)) + ">";
 				state = 0;
 				next = 12;
 				continue;
@@ -2469,12 +2524,22 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 			if(c == 59) {
 				var s = HxOverrides.substr(str,start,p - start);
 				if(s.charCodeAt(0) == 35) {
-					var i;
-					if(s.charCodeAt(1) == 120) i = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else i = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
-					buf.add(String.fromCharCode(i));
-				} else if(!haxe_xml_Parser.escapes.exists(s)) buf.b += Std.string("&" + s + ";"); else buf.add(haxe_xml_Parser.escapes.get(s));
+					var c1;
+					if(s.charCodeAt(1) == 120) c1 = Std.parseInt("0" + HxOverrides.substr(s,1,s.length - 1)); else c1 = Std.parseInt(HxOverrides.substr(s,1,s.length - 1));
+					buf.b += String.fromCharCode(c1);
+				} else if(!haxe_xml_Parser.escapes.exists(s)) {
+					if(strict) throw "Undefined entity: " + s;
+					buf.b += Std.string("&" + s + ";");
+				} else buf.add(haxe_xml_Parser.escapes.get(s));
 				start = p + 1;
-				state = next;
+				state = escapeNext;
+			} else if(!(c >= 97 && c <= 122 || c >= 65 && c <= 90 || c >= 48 && c <= 57 || c == 58 || c == 46 || c == 95 || c == 45) && c != 35) {
+				if(strict) throw "Invalid character in entity: " + String.fromCharCode(c);
+				buf.b += "&";
+				buf.addSub(str,start,p - start);
+				p--;
+				start = p;
+				state = escapeNext;
 			}
 			break;
 		}
@@ -2485,10 +2550,168 @@ haxe_xml_Parser.doParse = function(str,p,parent) {
 		state = 13;
 	}
 	if(state == 13) {
-		if(p != start || nsubs == 0) parent.addChild(Xml.createPCData(buf.b + HxOverrides.substr(str,start,p - start)));
+		if(p != start || nsubs == 0) {
+			buf.addSub(str,start,p - start);
+			parent.addChild(Xml.createPCData(buf.b));
+		}
+		return p;
+	}
+	if(!strict && state == 18 && escapeNext == 13) {
+		buf.b += "&";
+		buf.addSub(str,start,p - start);
+		parent.addChild(Xml.createPCData(buf.b));
 		return p;
 	}
 	throw "Unexpected end";
+};
+var haxe_xml_Printer = function(pretty) {
+	this.output = new StringBuf();
+	this.pretty = pretty;
+};
+$hxClasses["haxe.xml.Printer"] = haxe_xml_Printer;
+haxe_xml_Printer.__name__ = ["haxe","xml","Printer"];
+haxe_xml_Printer.print = function(xml,pretty) {
+	if(pretty == null) pretty = false;
+	var printer = new haxe_xml_Printer(pretty);
+	printer.writeNode(xml,"");
+	return printer.output.b;
+};
+haxe_xml_Printer.prototype = {
+	writeNode: function(value,tabs) {
+		var _g = value.nodeType;
+		switch(_g) {
+		case 2:
+			this.output.b += Std.string(tabs + "<![CDATA[");
+			this.write(StringTools.trim((function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw "Bad node type, unexpected " + value.nodeType;
+				$r = value.nodeValue;
+				return $r;
+			}(this))));
+			this.output.b += "]]>";
+			if(this.pretty) this.output.b += "";
+			break;
+		case 3:
+			var commentContent;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw "Bad node type, unexpected " + value.nodeType;
+			commentContent = value.nodeValue;
+			commentContent = new EReg("[\n\r\t]+","g").replace(commentContent,"");
+			commentContent = "<!--" + commentContent + "-->";
+			if(tabs == null) this.output.b += "null"; else this.output.b += "" + tabs;
+			this.write(StringTools.trim(commentContent));
+			if(this.pretty) this.output.b += "";
+			break;
+		case 6:
+			var $it0 = (function($this) {
+				var $r;
+				if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + value.nodeType;
+				$r = HxOverrides.iter(value.children);
+				return $r;
+			}(this));
+			while( $it0.hasNext() ) {
+				var child = $it0.next();
+				this.writeNode(child,tabs);
+			}
+			break;
+		case 0:
+			this.output.b += Std.string(tabs + "<");
+			this.write((function($this) {
+				var $r;
+				if(value.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + value.nodeType;
+				$r = value.nodeName;
+				return $r;
+			}(this)));
+			var $it1 = value.attributes();
+			while( $it1.hasNext() ) {
+				var attribute = $it1.next();
+				this.output.b += Std.string(" " + attribute + "=\"");
+				this.write(StringTools.htmlEscape(value.get(attribute),true));
+				this.output.b += "\"";
+			}
+			if(this.hasChildren(value)) {
+				this.output.b += ">";
+				if(this.pretty) this.output.b += "";
+				var $it2 = (function($this) {
+					var $r;
+					if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + value.nodeType;
+					$r = HxOverrides.iter(value.children);
+					return $r;
+				}(this));
+				while( $it2.hasNext() ) {
+					var child1 = $it2.next();
+					this.writeNode(child1,this.pretty?tabs + "\t":tabs);
+				}
+				this.output.b += Std.string(tabs + "</");
+				this.write((function($this) {
+					var $r;
+					if(value.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + value.nodeType;
+					$r = value.nodeName;
+					return $r;
+				}(this)));
+				this.output.b += ">";
+				if(this.pretty) this.output.b += "";
+			} else {
+				this.output.b += "/>";
+				if(this.pretty) this.output.b += "";
+			}
+			break;
+		case 1:
+			var nodeValue;
+			if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw "Bad node type, unexpected " + value.nodeType;
+			nodeValue = value.nodeValue;
+			if(nodeValue.length != 0) {
+				this.write(tabs + StringTools.htmlEscape(nodeValue));
+				if(this.pretty) this.output.b += "";
+			}
+			break;
+		case 5:
+			this.write("<?" + (function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw "Bad node type, unexpected " + value.nodeType;
+				$r = value.nodeValue;
+				return $r;
+			}(this)) + "?>");
+			break;
+		case 4:
+			this.write("<!DOCTYPE " + (function($this) {
+				var $r;
+				if(value.nodeType == Xml.Document || value.nodeType == Xml.Element) throw "Bad node type, unexpected " + value.nodeType;
+				$r = value.nodeValue;
+				return $r;
+			}(this)) + ">");
+			break;
+		}
+	}
+	,write: function(input) {
+		if(input == null) this.output.b += "null"; else this.output.b += "" + input;
+	}
+	,hasChildren: function(value) {
+		var $it0 = (function($this) {
+			var $r;
+			if(value.nodeType != Xml.Document && value.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + value.nodeType;
+			$r = HxOverrides.iter(value.children);
+			return $r;
+		}(this));
+		while( $it0.hasNext() ) {
+			var child = $it0.next();
+			var _g = child.nodeType;
+			switch(_g) {
+			case Xml.Element:case Xml.PCData:
+				return true;
+			case Xml.CData:case Xml.Comment:
+				if(StringTools.ltrim((function($this) {
+					var $r;
+					if(child.nodeType == Xml.Document || child.nodeType == Xml.Element) throw "Bad node type, unexpected " + child.nodeType;
+					$r = child.nodeValue;
+					return $r;
+				}(this))).length != 0) return true;
+				break;
+			default:
+			}
+		}
+		return false;
+	}
+	,__class__: haxe_xml_Printer
 };
 var haxor_core_IResizeable = function() { };
 $hxClasses["haxor.core.IResizeable"] = haxor_core_IResizeable;
@@ -2953,10 +3176,13 @@ haxor_component_ParticleSheet.prototype = {
 };
 var haxor_component_ParticleSystemState = { __ename__ : true, __constructs__ : ["None","Reset","Update"] };
 haxor_component_ParticleSystemState.None = ["None",0];
+haxor_component_ParticleSystemState.None.toString = $estr;
 haxor_component_ParticleSystemState.None.__enum__ = haxor_component_ParticleSystemState;
 haxor_component_ParticleSystemState.Reset = ["Reset",1];
+haxor_component_ParticleSystemState.Reset.toString = $estr;
 haxor_component_ParticleSystemState.Reset.__enum__ = haxor_component_ParticleSystemState;
 haxor_component_ParticleSystemState.Update = ["Update",2];
+haxor_component_ParticleSystemState.Update.toString = $estr;
 haxor_component_ParticleSystemState.Update.__enum__ = haxor_component_ParticleSystemState;
 var haxor_component_ParticleEmitter = function() {
 	this.m_data = [0,0,0,0,0,0,0];
@@ -8857,29 +9083,41 @@ haxor_core_Asset.UpdateProgress = function(p_id,p_progress,p_asset) {
 };
 var haxor_core_Platform = { __ename__ : true, __constructs__ : ["Unknown","Windows","Linux","Android","MacOS","iOS","HTML","NodeJS"] };
 haxor_core_Platform.Unknown = ["Unknown",0];
+haxor_core_Platform.Unknown.toString = $estr;
 haxor_core_Platform.Unknown.__enum__ = haxor_core_Platform;
 haxor_core_Platform.Windows = ["Windows",1];
+haxor_core_Platform.Windows.toString = $estr;
 haxor_core_Platform.Windows.__enum__ = haxor_core_Platform;
 haxor_core_Platform.Linux = ["Linux",2];
+haxor_core_Platform.Linux.toString = $estr;
 haxor_core_Platform.Linux.__enum__ = haxor_core_Platform;
 haxor_core_Platform.Android = ["Android",3];
+haxor_core_Platform.Android.toString = $estr;
 haxor_core_Platform.Android.__enum__ = haxor_core_Platform;
 haxor_core_Platform.MacOS = ["MacOS",4];
+haxor_core_Platform.MacOS.toString = $estr;
 haxor_core_Platform.MacOS.__enum__ = haxor_core_Platform;
 haxor_core_Platform.iOS = ["iOS",5];
+haxor_core_Platform.iOS.toString = $estr;
 haxor_core_Platform.iOS.__enum__ = haxor_core_Platform;
 haxor_core_Platform.HTML = ["HTML",6];
+haxor_core_Platform.HTML.toString = $estr;
 haxor_core_Platform.HTML.__enum__ = haxor_core_Platform;
 haxor_core_Platform.NodeJS = ["NodeJS",7];
+haxor_core_Platform.NodeJS.toString = $estr;
 haxor_core_Platform.NodeJS.__enum__ = haxor_core_Platform;
 var haxor_core_ApplicationProtocol = { __ename__ : true, __constructs__ : ["None","File","HTTP","HTTPS"] };
 haxor_core_ApplicationProtocol.None = ["None",0];
+haxor_core_ApplicationProtocol.None.toString = $estr;
 haxor_core_ApplicationProtocol.None.__enum__ = haxor_core_ApplicationProtocol;
 haxor_core_ApplicationProtocol.File = ["File",1];
+haxor_core_ApplicationProtocol.File.toString = $estr;
 haxor_core_ApplicationProtocol.File.__enum__ = haxor_core_ApplicationProtocol;
 haxor_core_ApplicationProtocol.HTTP = ["HTTP",2];
+haxor_core_ApplicationProtocol.HTTP.toString = $estr;
 haxor_core_ApplicationProtocol.HTTP.__enum__ = haxor_core_ApplicationProtocol;
 haxor_core_ApplicationProtocol.HTTPS = ["HTTPS",3];
+haxor_core_ApplicationProtocol.HTTPS.toString = $estr;
 haxor_core_ApplicationProtocol.HTTPS.__enum__ = haxor_core_ApplicationProtocol;
 var haxor_core_Console = function() { };
 $hxClasses["haxor.core.Console"] = haxor_core_Console;
@@ -8902,29 +9140,13 @@ haxor_core_Console.Log = function(p_msg,p_level) {
 };
 haxor_core_Console.LogImage = function(p_url,p_height) {
 	var s = "background: transparent url(" + p_url + ") no-repeat; font-size: " + (p_height - 3) + "px;";
-	haxor_core_Console.m_console.log("%c                                                                                                                                                            ",s);
+	var c = haxor_core_Console.m_console;
+	c.log("%c                                                                                                                                                            ",s);
 };
 haxor_core_Console.LogWarning = function(p_msg,p_obj) {
-	if(haxor_core_Console.m_console == null) console.log("[W] " + p_msg);
+	if(haxor_core_Console.m_console == null) console.log("[W] " + Std.string(p_msg));
 	if(p_obj == null) p_obj = [];
-	var _g = p_obj.length;
-	switch(_g) {
-	case 0:
-		haxor_core_Console.m_console.warn(p_msg);
-		break;
-	case 1:
-		haxor_core_Console.m_console.warn(p_msg,p_obj[0]);
-		break;
-	case 2:
-		haxor_core_Console.m_console.warn(p_msg,p_obj[0],p_obj[1]);
-		break;
-	case 3:
-		haxor_core_Console.m_console.warn(p_msg,p_obj[0],p_obj[1],p_obj[2]);
-		break;
-	case 4:
-		haxor_core_Console.m_console.warn(p_msg,p_obj[0],p_obj[1],p_obj[2],p_obj[3]);
-		break;
-	}
+	haxor_core_Console.m_console.warn(p_msg);
 };
 haxor_core_Console.LogError = function(p_msg,p_obj) {
 	if(haxor_core_Console.m_console == null) {
@@ -8932,30 +9154,12 @@ haxor_core_Console.LogError = function(p_msg,p_obj) {
 		return;
 	}
 	if(p_obj == null) p_obj = [];
-	var _g = p_obj.length;
-	switch(_g) {
-	case 0:
-		haxor_core_Console.m_console.error(p_msg);
-		break;
-	case 1:
-		haxor_core_Console.m_console.error(p_msg,p_obj[0]);
-		break;
-	case 2:
-		haxor_core_Console.m_console.error(p_msg,p_obj[0],p_obj[1]);
-		break;
-	case 3:
-		haxor_core_Console.m_console.error(p_msg,p_obj[0],p_obj[1],p_obj[2]);
-		break;
-	case 4:
-		haxor_core_Console.m_console.error(p_msg,p_obj[0],p_obj[1],p_obj[2],p_obj[3]);
-		break;
-	}
+	haxor_core_Console.m_console.error(p_msg);
 };
 haxor_core_Console.ClearStyle = function() {
 	haxor_core_Console.m_style = "";
 };
 haxor_core_Console.Clear = function() {
-	if(haxor_core_Console.m_console != null) haxor_core_Console.m_console.clear();
 };
 haxor_core_Console.TimeStart = function(p_id) {
 	if(haxor_core_Console.m_console != null) haxor_core_Console.m_console.time(p_id);
@@ -9110,8 +9314,10 @@ haxor_core_Debug.Light = function(l) {
 };
 var haxor_core_EngineState = { __ename__ : true, __constructs__ : ["Play","Editor"] };
 haxor_core_EngineState.Play = ["Play",0];
+haxor_core_EngineState.Play.toString = $estr;
 haxor_core_EngineState.Play.__enum__ = haxor_core_EngineState;
 haxor_core_EngineState.Editor = ["Editor",1];
+haxor_core_EngineState.Editor.toString = $estr;
 haxor_core_EngineState.Editor.__enum__ = haxor_core_EngineState;
 var haxor_core_Engine = function() { };
 $hxClasses["haxor.core.Engine"] = haxor_core_Engine;
@@ -9360,122 +9566,174 @@ $hxClasses["haxor.core.DepthTest"] = haxor_core_DepthTest;
 haxor_core_DepthTest.__name__ = ["haxor","core","DepthTest"];
 var haxor_core_CameraMode = { __ename__ : true, __constructs__ : ["Custom","Perspective","Ortho","UI"] };
 haxor_core_CameraMode.Custom = ["Custom",0];
+haxor_core_CameraMode.Custom.toString = $estr;
 haxor_core_CameraMode.Custom.__enum__ = haxor_core_CameraMode;
 haxor_core_CameraMode.Perspective = ["Perspective",1];
+haxor_core_CameraMode.Perspective.toString = $estr;
 haxor_core_CameraMode.Perspective.__enum__ = haxor_core_CameraMode;
 haxor_core_CameraMode.Ortho = ["Ortho",2];
+haxor_core_CameraMode.Ortho.toString = $estr;
 haxor_core_CameraMode.Ortho.__enum__ = haxor_core_CameraMode;
 haxor_core_CameraMode.UI = ["UI",3];
+haxor_core_CameraMode.UI.toString = $estr;
 haxor_core_CameraMode.UI.__enum__ = haxor_core_CameraMode;
 var haxor_core_PixelFormat = { __ename__ : true, __constructs__ : ["Alpha8","Luminance","RGB8","RGBA8","Half","Half3","Half4","Float","Float3","Float4","Depth","sRGB","sRGBA","sRGBA8"] };
 haxor_core_PixelFormat.Alpha8 = ["Alpha8",0];
+haxor_core_PixelFormat.Alpha8.toString = $estr;
 haxor_core_PixelFormat.Alpha8.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Luminance = ["Luminance",1];
+haxor_core_PixelFormat.Luminance.toString = $estr;
 haxor_core_PixelFormat.Luminance.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.RGB8 = ["RGB8",2];
+haxor_core_PixelFormat.RGB8.toString = $estr;
 haxor_core_PixelFormat.RGB8.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.RGBA8 = ["RGBA8",3];
+haxor_core_PixelFormat.RGBA8.toString = $estr;
 haxor_core_PixelFormat.RGBA8.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Half = ["Half",4];
+haxor_core_PixelFormat.Half.toString = $estr;
 haxor_core_PixelFormat.Half.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Half3 = ["Half3",5];
+haxor_core_PixelFormat.Half3.toString = $estr;
 haxor_core_PixelFormat.Half3.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Half4 = ["Half4",6];
+haxor_core_PixelFormat.Half4.toString = $estr;
 haxor_core_PixelFormat.Half4.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Float = ["Float",7];
+haxor_core_PixelFormat.Float.toString = $estr;
 haxor_core_PixelFormat.Float.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Float3 = ["Float3",8];
+haxor_core_PixelFormat.Float3.toString = $estr;
 haxor_core_PixelFormat.Float3.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Float4 = ["Float4",9];
+haxor_core_PixelFormat.Float4.toString = $estr;
 haxor_core_PixelFormat.Float4.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.Depth = ["Depth",10];
+haxor_core_PixelFormat.Depth.toString = $estr;
 haxor_core_PixelFormat.Depth.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.sRGB = ["sRGB",11];
+haxor_core_PixelFormat.sRGB.toString = $estr;
 haxor_core_PixelFormat.sRGB.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.sRGBA = ["sRGBA",12];
+haxor_core_PixelFormat.sRGBA.toString = $estr;
 haxor_core_PixelFormat.sRGBA.__enum__ = haxor_core_PixelFormat;
 haxor_core_PixelFormat.sRGBA8 = ["sRGBA8",13];
+haxor_core_PixelFormat.sRGBA8.toString = $estr;
 haxor_core_PixelFormat.sRGBA8.__enum__ = haxor_core_PixelFormat;
 var haxor_core_TextureFilter = { __ename__ : true, __constructs__ : ["Nearest","Linear","NearestMipmapNearest","NearestMipmapLinear","LinearMipmapNearest","LinearMipmapLinear","Trilinear"] };
 haxor_core_TextureFilter.Nearest = ["Nearest",0];
+haxor_core_TextureFilter.Nearest.toString = $estr;
 haxor_core_TextureFilter.Nearest.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.Linear = ["Linear",1];
+haxor_core_TextureFilter.Linear.toString = $estr;
 haxor_core_TextureFilter.Linear.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.NearestMipmapNearest = ["NearestMipmapNearest",2];
+haxor_core_TextureFilter.NearestMipmapNearest.toString = $estr;
 haxor_core_TextureFilter.NearestMipmapNearest.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.NearestMipmapLinear = ["NearestMipmapLinear",3];
+haxor_core_TextureFilter.NearestMipmapLinear.toString = $estr;
 haxor_core_TextureFilter.NearestMipmapLinear.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.LinearMipmapNearest = ["LinearMipmapNearest",4];
+haxor_core_TextureFilter.LinearMipmapNearest.toString = $estr;
 haxor_core_TextureFilter.LinearMipmapNearest.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.LinearMipmapLinear = ["LinearMipmapLinear",5];
+haxor_core_TextureFilter.LinearMipmapLinear.toString = $estr;
 haxor_core_TextureFilter.LinearMipmapLinear.__enum__ = haxor_core_TextureFilter;
 haxor_core_TextureFilter.Trilinear = ["Trilinear",6];
+haxor_core_TextureFilter.Trilinear.toString = $estr;
 haxor_core_TextureFilter.Trilinear.__enum__ = haxor_core_TextureFilter;
 var haxor_core_TextureWrap = function() { };
 $hxClasses["haxor.core.TextureWrap"] = haxor_core_TextureWrap;
 haxor_core_TextureWrap.__name__ = ["haxor","core","TextureWrap"];
 var haxor_core_TextureType = { __ename__ : true, __constructs__ : ["None","Texture2D","TextureCube","RenderTexture","Compute"] };
 haxor_core_TextureType.None = ["None",0];
+haxor_core_TextureType.None.toString = $estr;
 haxor_core_TextureType.None.__enum__ = haxor_core_TextureType;
 haxor_core_TextureType.Texture2D = ["Texture2D",1];
+haxor_core_TextureType.Texture2D.toString = $estr;
 haxor_core_TextureType.Texture2D.__enum__ = haxor_core_TextureType;
 haxor_core_TextureType.TextureCube = ["TextureCube",2];
+haxor_core_TextureType.TextureCube.toString = $estr;
 haxor_core_TextureType.TextureCube.__enum__ = haxor_core_TextureType;
 haxor_core_TextureType.RenderTexture = ["RenderTexture",3];
+haxor_core_TextureType.RenderTexture.toString = $estr;
 haxor_core_TextureType.RenderTexture.__enum__ = haxor_core_TextureType;
 haxor_core_TextureType.Compute = ["Compute",4];
+haxor_core_TextureType.Compute.toString = $estr;
 haxor_core_TextureType.Compute.__enum__ = haxor_core_TextureType;
 var haxor_core_ClearFlag = function() { };
 $hxClasses["haxor.core.ClearFlag"] = haxor_core_ClearFlag;
 haxor_core_ClearFlag.__name__ = ["haxor","core","ClearFlag"];
 var haxor_core_InputState = { __ename__ : true, __constructs__ : ["None","Down","Up","Hold"] };
 haxor_core_InputState.None = ["None",0];
+haxor_core_InputState.None.toString = $estr;
 haxor_core_InputState.None.__enum__ = haxor_core_InputState;
 haxor_core_InputState.Down = ["Down",1];
+haxor_core_InputState.Down.toString = $estr;
 haxor_core_InputState.Down.__enum__ = haxor_core_InputState;
 haxor_core_InputState.Up = ["Up",2];
+haxor_core_InputState.Up.toString = $estr;
 haxor_core_InputState.Up.__enum__ = haxor_core_InputState;
 haxor_core_InputState.Hold = ["Hold",3];
+haxor_core_InputState.Hold.toString = $estr;
 haxor_core_InputState.Hold.__enum__ = haxor_core_InputState;
 var haxor_core_AnimationWrap = { __ename__ : true, __constructs__ : ["Clamp","Loop","Oscilate"] };
 haxor_core_AnimationWrap.Clamp = ["Clamp",0];
+haxor_core_AnimationWrap.Clamp.toString = $estr;
 haxor_core_AnimationWrap.Clamp.__enum__ = haxor_core_AnimationWrap;
 haxor_core_AnimationWrap.Loop = ["Loop",1];
+haxor_core_AnimationWrap.Loop.toString = $estr;
 haxor_core_AnimationWrap.Loop.__enum__ = haxor_core_AnimationWrap;
 haxor_core_AnimationWrap.Oscilate = ["Oscilate",2];
+haxor_core_AnimationWrap.Oscilate.toString = $estr;
 haxor_core_AnimationWrap.Oscilate.__enum__ = haxor_core_AnimationWrap;
 var haxor_core_ColliderType = { __ename__ : true, __constructs__ : ["Point","Plane","Box","Sphere","Capsule","Mesh"] };
 haxor_core_ColliderType.Point = ["Point",0];
+haxor_core_ColliderType.Point.toString = $estr;
 haxor_core_ColliderType.Point.__enum__ = haxor_core_ColliderType;
 haxor_core_ColliderType.Plane = ["Plane",1];
+haxor_core_ColliderType.Plane.toString = $estr;
 haxor_core_ColliderType.Plane.__enum__ = haxor_core_ColliderType;
 haxor_core_ColliderType.Box = ["Box",2];
+haxor_core_ColliderType.Box.toString = $estr;
 haxor_core_ColliderType.Box.__enum__ = haxor_core_ColliderType;
 haxor_core_ColliderType.Sphere = ["Sphere",3];
+haxor_core_ColliderType.Sphere.toString = $estr;
 haxor_core_ColliderType.Sphere.__enum__ = haxor_core_ColliderType;
 haxor_core_ColliderType.Capsule = ["Capsule",4];
+haxor_core_ColliderType.Capsule.toString = $estr;
 haxor_core_ColliderType.Capsule.__enum__ = haxor_core_ColliderType;
 haxor_core_ColliderType.Mesh = ["Mesh",5];
+haxor_core_ColliderType.Mesh.toString = $estr;
 haxor_core_ColliderType.Mesh.__enum__ = haxor_core_ColliderType;
 var haxor_core_ForceMode = { __ename__ : true, __constructs__ : ["Acceleration","Force","Impulse","Velocity"] };
 haxor_core_ForceMode.Acceleration = ["Acceleration",0];
+haxor_core_ForceMode.Acceleration.toString = $estr;
 haxor_core_ForceMode.Acceleration.__enum__ = haxor_core_ForceMode;
 haxor_core_ForceMode.Force = ["Force",1];
+haxor_core_ForceMode.Force.toString = $estr;
 haxor_core_ForceMode.Force.__enum__ = haxor_core_ForceMode;
 haxor_core_ForceMode.Impulse = ["Impulse",2];
+haxor_core_ForceMode.Impulse.toString = $estr;
 haxor_core_ForceMode.Impulse.__enum__ = haxor_core_ForceMode;
 haxor_core_ForceMode.Velocity = ["Velocity",3];
+haxor_core_ForceMode.Velocity.toString = $estr;
 haxor_core_ForceMode.Velocity.__enum__ = haxor_core_ForceMode;
 var haxor_core_BoneQuality = { __ename__ : true, __constructs__ : ["Auto","Bone1","Bone2","Bone3","Bone4"] };
 haxor_core_BoneQuality.Auto = ["Auto",0];
+haxor_core_BoneQuality.Auto.toString = $estr;
 haxor_core_BoneQuality.Auto.__enum__ = haxor_core_BoneQuality;
 haxor_core_BoneQuality.Bone1 = ["Bone1",1];
+haxor_core_BoneQuality.Bone1.toString = $estr;
 haxor_core_BoneQuality.Bone1.__enum__ = haxor_core_BoneQuality;
 haxor_core_BoneQuality.Bone2 = ["Bone2",2];
+haxor_core_BoneQuality.Bone2.toString = $estr;
 haxor_core_BoneQuality.Bone2.__enum__ = haxor_core_BoneQuality;
 haxor_core_BoneQuality.Bone3 = ["Bone3",3];
+haxor_core_BoneQuality.Bone3.toString = $estr;
 haxor_core_BoneQuality.Bone3.__enum__ = haxor_core_BoneQuality;
 haxor_core_BoneQuality.Bone4 = ["Bone4",4];
+haxor_core_BoneQuality.Bone4.toString = $estr;
 haxor_core_BoneQuality.Bone4.__enum__ = haxor_core_BoneQuality;
 var haxor_core_ShaderFeature = function() { };
 $hxClasses["haxor.core.ShaderFeature"] = haxor_core_ShaderFeature;
@@ -10474,23 +10732,23 @@ haxor_dom_DOMStage.BuildDOMEntity = function(n,e) {
 			var m = e.get_layout().m_margin;
 			var n1 = 0.0;
 			if(mtk.length == 1) {
-				n1 = Std.parseFloat(mtk[0]);
+				n1 = parseFloat(mtk[0]);
 				m.Set(n1,n1,n1,n1);
 			} else {
 				if(mtk.length >= 1) {
-					n1 = Std.parseFloat(mtk[0]);
+					n1 = parseFloat(mtk[0]);
 					m.set_xMin(n1);
 				}
 				if(mtk.length >= 2) {
-					n1 = Std.parseFloat(mtk[1]);
+					n1 = parseFloat(mtk[1]);
 					m.set_xMax(n1);
 				}
 				if(mtk.length >= 3) {
-					n1 = Std.parseFloat(mtk[2]);
+					n1 = parseFloat(mtk[2]);
 					m.set_yMin(n1);
 				}
 				if(mtk.length >= 4) {
-					n1 = Std.parseFloat(mtk[3]);
+					n1 = parseFloat(mtk[3]);
 					m.set_yMax(n1);
 				}
 			}
@@ -10551,7 +10809,7 @@ haxor_dom_DOMStage._sn = function(s,v,n) {
 		isr = true;
 		s = StringTools.replace(s,"%","");
 	}
-	v[0] = Std.parseFloat(s);
+	v[0] = parseFloat(s);
 	return isr;
 };
 haxor_dom_DOMStage._ss = function(s) {
@@ -10588,7 +10846,7 @@ var haxor_dom_Sprite = function(p_src,p_use_canvas,p_name) {
 		var _this = window.document;
 		c = _this.createElement("canvas");
 		c.style.position = "absolute";
-		this._rc = c.getContext("2d");
+		this._rc = c.getContext("2d",null);
 		e = c;
 	}
 	var img = new Image();
@@ -11481,12 +11739,16 @@ haxor_graphics_Gizmo.EndPath = function() {
 };
 var haxor_graphics_GraphicAPI = { __ename__ : true, __constructs__ : ["None","OpenGL","OpenGLES","WebGL"] };
 haxor_graphics_GraphicAPI.None = ["None",0];
+haxor_graphics_GraphicAPI.None.toString = $estr;
 haxor_graphics_GraphicAPI.None.__enum__ = haxor_graphics_GraphicAPI;
 haxor_graphics_GraphicAPI.OpenGL = ["OpenGL",1];
+haxor_graphics_GraphicAPI.OpenGL.toString = $estr;
 haxor_graphics_GraphicAPI.OpenGL.__enum__ = haxor_graphics_GraphicAPI;
 haxor_graphics_GraphicAPI.OpenGLES = ["OpenGLES",2];
+haxor_graphics_GraphicAPI.OpenGLES.toString = $estr;
 haxor_graphics_GraphicAPI.OpenGLES.__enum__ = haxor_graphics_GraphicAPI;
 haxor_graphics_GraphicAPI.WebGL = ["WebGL",3];
+haxor_graphics_GraphicAPI.WebGL.toString = $estr;
 haxor_graphics_GraphicAPI.WebGL.__enum__ = haxor_graphics_GraphicAPI;
 var haxor_graphics_GraphicContext = function(p_application) {
 	this.m_api = haxor_graphics_GraphicAPI.None;
@@ -12009,10 +12271,13 @@ haxor_graphics_Screen.Initialize = function(p_application) {
 };
 var haxor_graphics_CursorMode = { __ename__ : true, __constructs__ : ["Show","Hide","Lock"] };
 haxor_graphics_CursorMode.Show = ["Show",0];
+haxor_graphics_CursorMode.Show.toString = $estr;
 haxor_graphics_CursorMode.Show.__enum__ = haxor_graphics_CursorMode;
 haxor_graphics_CursorMode.Hide = ["Hide",1];
+haxor_graphics_CursorMode.Hide.toString = $estr;
 haxor_graphics_CursorMode.Hide.__enum__ = haxor_graphics_CursorMode;
 haxor_graphics_CursorMode.Lock = ["Lock",2];
+haxor_graphics_CursorMode.Lock.toString = $estr;
 haxor_graphics_CursorMode.Lock.__enum__ = haxor_graphics_CursorMode;
 var haxor_graphics_material_Material = function(p_name) {
 	if(p_name == null) p_name = "";
@@ -12673,7 +12938,12 @@ haxor_graphics_material_Shader.prototype = $extend(haxor_core_Resource.prototype
 	}
 	,GetShaderSource: function(n,hp) {
 		if(n == null) return "";
-		var src = n.firstChild().get_nodeValue().toString();
+		var src = ((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Document && n.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + n.nodeType;
+			$r = n.children[0];
+			return $r;
+		}(this))).get_nodeValue().toString();
 		var prec = (n.get("precision") == null?"low":n.get("precision")).toLowerCase();
 		switch(prec) {
 		case "low":
@@ -13400,43 +13670,43 @@ haxor_graphics_texture_Bitmap.prototype = $extend(haxor_core_Resource.prototype,
 		var pos = (p_x + p_y * this.m_width) * cc;
 		if(this.m_float) {
 			var c = new haxor_math_Color();
-			var b = this.m_buffer;
+			var b1 = this.m_buffer;
 			switch(cc) {
 			case 1:
-				c.r = b.Get(pos);
+				c.r = b1.Get(pos);
 				c.g = c.r;
 				c.b = c.r;
 				c.a = 1.0;
 				break;
 			case 2:
-				c.r = b.Get(pos);
-				c.g = b.Get(pos + 1);
+				c.r = b1.Get(pos);
+				c.g = b1.Get(pos + 1);
 				c.b = c.r;
 				c.a = 1.0;
 				break;
 			case 3:
-				c.r = b.Get(pos);
-				c.g = b.Get(pos + 1);
-				c.b = b.Get(pos + 2);
+				c.r = b1.Get(pos);
+				c.g = b1.Get(pos + 1);
+				c.b = b1.Get(pos + 2);
 				c.a = 1.0;
 				break;
 			case 4:
-				c.r = b.Get(pos);
-				c.g = b.Get(pos + 1);
-				c.b = b.Get(pos + 2);
-				c.a = b.Get(pos + 3);
+				c.r = b1.Get(pos);
+				c.g = b1.Get(pos + 1);
+				c.b = b1.Get(pos + 2);
+				c.a = b1.Get(pos + 3);
 				break;
 			}
 			return c;
 		}
-		var b1 = this.m_buffer;
-		var rb = b1.GetByte(pos);
+		var b = this.m_buffer;
+		var rb = b.GetByte(pos);
 		var gb;
-		if(cc >= 2) gb = b1.GetByte(pos + 1); else gb = rb;
+		if(cc >= 2) gb = b.GetByte(pos + 1); else gb = rb;
 		var bb;
-		if(cc >= 3) bb = b1.GetByte(pos + 2); else bb = rb;
+		if(cc >= 3) bb = b.GetByte(pos + 2); else bb = rb;
 		var ab;
-		if(cc >= 4) ab = b1.GetByte(pos + 3); else ab = rb;
+		if(cc >= 4) ab = b.GetByte(pos + 3); else ab = rb;
 		return haxor_math_Color.FromBytes(rb,gb,bb,ab);
 	}
 	,SetPixel: function(p_x,p_y,p_color) {
@@ -13448,18 +13718,18 @@ haxor_graphics_texture_Bitmap.prototype = $extend(haxor_core_Resource.prototype,
 		var cc = this.m_channels;
 		var pos = (p_x + p_y * this.m_width) * cc;
 		if(this.m_float) {
-			var b = this.m_buffer;
-			b.Set(pos,p_color.r);
-			if(cc >= 2) b.Set(pos + 1,p_color.g);
-			if(cc >= 3) b.Set(pos + 2,p_color.b);
-			if(cc >= 4) b.Set(pos + 3,p_color.a);
+			var b1 = this.m_buffer;
+			b1.Set(pos,p_color.r);
+			if(cc >= 2) b1.Set(pos + 1,p_color.g);
+			if(cc >= 3) b1.Set(pos + 2,p_color.b);
+			if(cc >= 4) b1.Set(pos + 3,p_color.a);
 			return;
 		}
-		var b1 = this.m_buffer;
-		b1.SetByte(pos,p_color.r * 255.0);
-		if(cc >= 2) b1.SetByte(pos + 1,p_color.g * 255.0);
-		if(cc >= 3) b1.SetByte(pos + 2,p_color.b * 255.0);
-		if(cc >= 4) b1.SetByte(pos + 3,p_color.a * 255.0);
+		var b = this.m_buffer;
+		b.SetByte(pos,p_color.r * 255.0);
+		if(cc >= 2) b.SetByte(pos + 1,p_color.g * 255.0);
+		if(cc >= 3) b.SetByte(pos + 2,p_color.b * 255.0);
+		if(cc >= 4) b.SetByte(pos + 3,p_color.a * 255.0);
 	}
 	,SetPixels: function(p_colors,p_x,p_y,p_width,p_height) {
 		if(p_height == null) p_height = -1;
@@ -13507,18 +13777,18 @@ haxor_graphics_texture_Bitmap.prototype = $extend(haxor_core_Resource.prototype,
 		p_y = this.m_height - 1 - p_y;
 		var pos = (p_x + p_y * this.m_width) * cc;
 		if(this.m_float) {
-			var b = this.m_buffer;
-			b.Set(pos,p_v0);
-			if(cc >= 2) b.Set(pos + 1,p_v1);
-			if(cc >= 3) b.Set(pos + 2,p_v2);
-			if(cc >= 4) b.Set(pos + 3,p_v3);
+			var b1 = this.m_buffer;
+			b1.Set(pos,p_v0);
+			if(cc >= 2) b1.Set(pos + 1,p_v1);
+			if(cc >= 3) b1.Set(pos + 2,p_v2);
+			if(cc >= 4) b1.Set(pos + 3,p_v3);
 			return;
 		}
-		var b1 = this.m_buffer;
-		b1.SetByte(pos,p_v0 * 255.0);
-		if(cc >= 2) b1.SetByte(pos + 1,p_v1 * 255.0);
-		if(cc >= 3) b1.SetByte(pos + 2,p_v2 * 255.0);
-		if(cc >= 4) b1.SetByte(pos + 3,p_v3 * 255.0);
+		var b = this.m_buffer;
+		b.SetByte(pos,p_v0 * 255.0);
+		if(cc >= 2) b.SetByte(pos + 1,p_v1 * 255.0);
+		if(cc >= 3) b.SetByte(pos + 2,p_v2 * 255.0);
+		if(cc >= 4) b.SetByte(pos + 3,p_v3 * 255.0);
 	}
 	,SetRange: function(p_values,p_x,p_y,p_width,p_height) {
 		if(p_height == null) p_height = -1;
@@ -13554,18 +13824,18 @@ haxor_graphics_texture_Bitmap.prototype = $extend(haxor_core_Resource.prototype,
 			if(cc >= 3) v2 = p_values[k++];
 			if(cc >= 4) v3 = p_values[k++];
 			if(this.m_float) {
-				var b = this.m_buffer;
-				b.Set(pos,v0);
-				if(cc >= 2) b.Set(pos + 1,v1);
-				if(cc >= 3) b.Set(pos + 2,v2);
-				if(cc >= 4) b.Set(pos + 3,v3);
+				var b1 = this.m_buffer;
+				b1.Set(pos,v0);
+				if(cc >= 2) b1.Set(pos + 1,v1);
+				if(cc >= 3) b1.Set(pos + 2,v2);
+				if(cc >= 4) b1.Set(pos + 3,v3);
 				continue;
 			}
-			var b1 = this.m_buffer;
-			b1.SetByte(pos,v0 * 255.0);
-			if(cc >= 2) b1.SetByte(pos + 1,v1 * 255.0);
-			if(cc >= 3) b1.SetByte(pos + 2,v2 * 255.0);
-			if(cc >= 4) b1.SetByte(pos + 3,v3 * 255.0);
+			var b = this.m_buffer;
+			b.SetByte(pos,v0 * 255.0);
+			if(cc >= 2) b.SetByte(pos + 1,v1 * 255.0);
+			if(cc >= 3) b.SetByte(pos + 2,v2 * 255.0);
+			if(cc >= 4) b.SetByte(pos + 3,v3 * 255.0);
 		}
 	}
 	,__class__: haxor_graphics_texture_Bitmap
@@ -13915,7 +14185,7 @@ haxor_input_Input.get_multitouch = function() {
 	return haxor_input_Input.m_multitouch;
 };
 haxor_input_Input.GetInputState = function(p_code) {
-	return haxor_input_Input.m_state.get(p_code);
+	return haxor_input_Input.m_state.h[p_code];
 };
 haxor_input_Input.Pressed = function(p_code) {
 	var s = haxor_input_Input.GetInputState(p_code);
@@ -13930,7 +14200,7 @@ haxor_input_Input.Hit = function(p_code) {
 	return s == haxor_core_InputState.Up;
 };
 haxor_input_Input.GetHoldTime = function(p_code) {
-	return haxor_input_Input.m_hold.get(p_code);
+	return haxor_input_Input.m_hold.h[p_code];
 };
 haxor_input_Input.Filter = function(p_code) {
 	var res = [];
@@ -13966,8 +14236,8 @@ haxor_input_Input.MultiHit = function(p_code,p_count,p_timeout,p_clear) {
 haxor_input_Input.Initialize = function() {
 	haxor_input_Input.m_state = new haxe_ds_IntMap();
 	haxor_input_Input.m_hold = new haxe_ds_IntMap();
-	haxor_input_Input.m_active = new Array();
-	haxor_input_Input.m_down = new Array();
+	haxor_input_Input.m_active = [];
+	haxor_input_Input.m_down = [];
 	haxor_input_Input.m_touches = [];
 	haxor_input_Input.m_api_touches = [];
 	haxor_input_Input.log = [];
@@ -13981,8 +14251,8 @@ haxor_input_Input.Initialize = function() {
 	var _g1 = 0;
 	while(_g1 < 256) {
 		var i1 = _g1++;
-		haxor_input_Input.m_state.set(i1,haxor_core_InputState.None);
-		haxor_input_Input.m_hold.set(i1,0);
+		haxor_input_Input.m_state.h[i1] = haxor_core_InputState.None;
+		haxor_input_Input.m_hold.h[i1] = 0;
 		haxor_input_Input.m_down.push(false);
 	}
 	haxor_input_Input.m_joysticks = [];
@@ -14027,7 +14297,7 @@ haxor_input_Input.TouchFSM = function(t) {
 };
 haxor_input_Input.UpdateInputState = function(p_code,p_is_down,p_update_state) {
 	if(p_update_state == null) p_update_state = true;
-	var current = haxor_input_Input.m_state.get(p_code);
+	var current = haxor_input_Input.m_state.h[p_code];
 	if(current == null) current = haxor_core_InputState.None;
 	var next = current;
 	var d0 = haxor_input_Input.m_down[p_code];
@@ -14042,15 +14312,15 @@ haxor_input_Input.UpdateInputState = function(p_code,p_is_down,p_update_state) {
 		if(current == haxor_core_InputState.Up) {
 			haxor_input_Input.log.push(new haxor_input_InputLog(p_code,haxor_core_Time.m_elapsed));
 			if(haxor_input_Input.log.length == 1) haxor_input_Input.m_timeout_elapsed = haxor_core_Time.m_elapsed;
-			haxor_input_Input.m_hold.set(p_code,0);
+			haxor_input_Input.m_hold.h[p_code] = 0;
 			HxOverrides.remove(haxor_input_Input.m_active,p_code);
 		}
 		if(current == haxor_core_InputState.Hold) {
-			var h = haxor_input_Input.m_hold.get(p_code);
-			haxor_input_Input.m_hold.set(p_code,h + haxor_core_Time.m_delta);
+			var h = haxor_input_Input.m_hold.h[p_code];
+			haxor_input_Input.m_hold.h[p_code] = h + haxor_core_Time.m_delta;
 		}
 		next = haxor_input_Input.InputStateFSM(current,d);
-		if(current != next) haxor_input_Input.m_state.set(p_code,next);
+		if(current != next) haxor_input_Input.m_state.h[p_code] = next;
 	}
 };
 haxor_input_Input.InputStateFSM = function(p_current,p_is_down) {
@@ -14676,7 +14946,7 @@ haxor_io_file_AssetFile.prototype = $extend(haxor_core_Resource.prototype,{
 		var _g = l.length;
 		while(_g1 < _g) {
 			var i = _g1++;
-			a.push(Std.parseFloat(l[i]));
+			a.push(parseFloat(l[i]));
 		}
 		return a;
 	}
@@ -14747,8 +15017,18 @@ haxor_io_file_AssetXML.prototype = $extend(haxor_io_file_AssetFile.prototype,{
 			var tk = l[i];
 			switch(tk) {
 			case "$text":
-				if(it.firstChild() == null) return v;
-				var txt = it.firstChild().toString();
+				if((function($this) {
+					var $r;
+					if(it.nodeType != Xml.Document && it.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + it.nodeType;
+					$r = it.children[0];
+					return $r;
+				}(this)) == null) return v;
+				var txt = ((function($this) {
+					var $r;
+					if(it.nodeType != Xml.Document && it.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + it.nodeType;
+					$r = it.children[0];
+					return $r;
+				}(this))).toString();
 				if(t) txt = StringTools.trim(txt);
 				if(tl) txt = txt.toLowerCase();
 				return txt;
@@ -15157,7 +15437,9 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		return null;
 	}
 	,Parse: function(n) {
-		var _g = n.get_nodeName();
+		var _g;
+		if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+		_g = n.nodeName;
 		switch(_g) {
 		case "COLLADA":
 			this.xmlns = this._a(n,"xmlns","");
@@ -15216,7 +15498,12 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 			lit = lit.next().elements();
 			if(!lit.hasNext()) continue;
 			ln = lit.next();
-			l.type = ln.get_nodeName().toLowerCase();
+			l.type = ((function($this) {
+				var $r;
+				if(ln.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + ln.nodeType;
+				$r = ln.nodeName;
+				return $r;
+			}(this))).toLowerCase();
 			var ca = [1,1,1,1];
 			var _g = l.type;
 			switch(_g) {
@@ -15340,7 +15627,9 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		var it = n.elements();
 		while(it.hasNext()) {
 			n = it.next();
-			var _g = n.get_nodeName();
+			var _g;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			_g = n.nodeName;
 			switch(_g) {
 			case "material":
 				var mat = new haxor_io_file_ColladaMaterial();
@@ -15356,7 +15645,9 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		var it = n.elements();
 		while(it.hasNext()) {
 			n = it.next();
-			var _g = n.get_nodeName();
+			var _g;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			_g = n.nodeName;
 			switch(_g) {
 			case "visual_scene":
 				this.ParseVisualScene(n);
@@ -15369,12 +15660,18 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		this.scene = new haxor_io_file_ColladaVisualScene();
 		this.scene.id = this._a(n,"id","collada_scene");
 		this.scene.name = this._a(n,"name",this.scene.id);
-		this.scene.type = n.get_nodeName();
+		if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+		this.scene.type = n.nodeName;
 		this.TraverseVisualSceneNodes(this.scene,null,n);
 	}
 	,TraverseVisualSceneNodes: function(scn,p,n) {
 		var cn = null;
-		if(n.get_nodeName() == "node") cn = this.ParseVisualSceneNode(scn,p,n);
+		if((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			$r = n.nodeName;
+			return $r;
+		}(this)) == "node") cn = this.ParseVisualSceneNode(scn,p,n);
 		var cn_it = n.elementsNamed("node");
 		while(cn_it.hasNext()) this.TraverseVisualSceneNodes(scn,cn,cn_it.next());
 	}
@@ -15393,7 +15690,9 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		while(iit.hasNext()) {
 			var nin = iit.next();
 			var ni = null;
-			var _g = nin.get_nodeName();
+			var _g;
+			if(nin.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + nin.nodeType;
+			_g = nin.nodeName;
 			switch(_g) {
 			case "instance_geometry":
 				ni = new haxor_io_file_ColladaInstance();
@@ -15440,7 +15739,17 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 	,ParseController: function(c,n) {
 		n = n.firstElement();
 		if(n == null) return;
-		if(n.get_nodeName() == null) c.type = "none"; else c.type = n.get_nodeName().toLowerCase();
+		if((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			$r = n.nodeName;
+			return $r;
+		}(this)) == null) c.type = "none"; else c.type = ((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			$r = n.nodeName;
+			return $r;
+		}(this))).toLowerCase();
 		var _g = c.type;
 		switch(_g) {
 		case "skin":
@@ -15527,7 +15836,17 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		n = n.firstElement();
 		if(n == null) return;
 		g.mesh = new haxor_io_file_ColladaMesh();
-		if(n.get_nodeName() == null) g.mesh.type = "none"; else g.mesh.type = n.get_nodeName().toLowerCase();
+		if((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			$r = n.nodeName;
+			return $r;
+		}(this)) == null) g.mesh.type = "none"; else g.mesh.type = ((function($this) {
+			var $r;
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			$r = n.nodeName;
+			return $r;
+		}(this))).toLowerCase();
 		var _g = g.mesh.type;
 		switch(_g) {
 		case "mesh":
@@ -15544,10 +15863,21 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		var p = n;
 		while(it.hasNext()) {
 			n = it.next();
-			if(n.get_nodeName() == "vertices") continue;
-			if(n.get_nodeName() == "source") continue;
+			if((function($this) {
+				var $r;
+				if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+				$r = n.nodeName;
+				return $r;
+			}(this)) == "vertices") continue;
+			if((function($this) {
+				var $r;
+				if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+				$r = n.nodeName;
+				return $r;
+			}(this)) == "source") continue;
 			var cp = new haxor_io_file_ColladaPrimitive();
-			cp.type = n.get_nodeName();
+			if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+			cp.type = n.nodeName;
 			cp.material = this._a(n,"material","");
 			this.ParsePrimitive(cp,p,n);
 			m.primitives.push(cp);
@@ -15559,12 +15889,22 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		var vc_it = n.elementsNamed("vcount");
 		if(vc_it.hasNext()) {
 			var ncitn = vc_it.next().firstChild();
-			if(ncitn == null) cp.vcount = []; else cp.vcount = this._i16a(ncitn.toString());
+			if(ncitn == null) cp.vcount = []; else cp.vcount = this._i16a(haxe_xml_Printer.print(ncitn));
 		}
 		while(p_it.hasNext()) {
 			var vn = p_it.next();
 			var vb;
-			if(vn.firstChild() != null) vb = vn.firstChild().toString(); else vb = "0";
+			if((function($this) {
+				var $r;
+				if(vn.nodeType != Xml.Document && vn.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + vn.nodeType;
+				$r = vn.children[0];
+				return $r;
+			}(this)) != null) vb = ((function($this) {
+				var $r;
+				if(vn.nodeType != Xml.Document && vn.nodeType != Xml.Element) throw "Bad node type, expected Element or Document but found " + vn.nodeType;
+				$r = vn.children[0];
+				return $r;
+			}(this))).toString(); else vb = "0";
 			var off = cp.get_offset();
 			var ti = this._i16ta(vb,off);
 			cp.indexes.push(ti);
@@ -15608,7 +15948,7 @@ haxor_io_file_ColladaFile.prototype = $extend(haxor_io_file_AssetXML.prototype,{
 		var _g = l.length;
 		while(_g1 < _g) {
 			var i = _g1++;
-			a.push(Std.parseFloat(l[i]));
+			a.push(parseFloat(l[i]));
 		}
 		return a;
 	}
@@ -16253,7 +16593,9 @@ haxor_io_file_MaterialFile.prototype = $extend(haxor_io_file_AssetXML.prototype,
 		return m;
 	}
 	,Parse: function(n) {
-		var _g = n.get_nodeName();
+		var _g;
+		if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+		_g = n.nodeName;
 		switch(_g) {
 		case "material":
 			this.mguid = this._a(n,"guid","");
@@ -16302,7 +16644,12 @@ haxor_io_file_MaterialFile.prototype = $extend(haxor_io_file_AssetXML.prototype,
 		while(it.hasNext()) {
 			n = it.next();
 			var u = new haxor_io_file_MaterialFileUniform();
-			u.type = n.get_nodeName().toLowerCase();
+			u.type = ((function($this) {
+				var $r;
+				if(n.nodeType != Xml.Element) throw "Bad node type, expected Element but found " + n.nodeType;
+				$r = n.nodeName;
+				return $r;
+			}(this))).toLowerCase();
 			u.name = this._a(n,"name","");
 			u.value = this._p(n,"$text","",true);
 			this.uniforms.push(u);
@@ -17665,30 +18012,35 @@ haxor_platform_html_net_BitmapLoader.prototype = $extend(haxor_platform_html_net
 			if(p_data == null) return;
 			var img = new Image();
 			img.onload = function(e) {
-				var g;
-				var _this;
-				var _this1 = window.document;
-				_this = _this1.createElement("canvas");
-				g = _this.getContext("2d");
-				g.canvas.width = img.width;
-				g.canvas.height = img.height;
-				g.scale(1.0,-1.0);
-				g.drawImage(img,0,-img.height);
-				var data = g.getImageData(0,0,g.canvas.width,g.canvas.height);
-				var w = data.width;
-				var h = data.height;
-				var cc = data.data.byteLength / (w * h) | 0;
+				var data = null;
+				var w = 1;
+				var h = 1;
 				var fmt = haxor_core_PixelFormat.RGBA8;
-				switch(cc) {
-				case 1:
-					fmt = haxor_core_PixelFormat.Alpha8;
-					break;
-				case 3:
-					fmt = haxor_core_PixelFormat.RGB8;
-					break;
+				if(window.document != null) {
+					var g;
+					var _this;
+					var _this1 = window.document;
+					_this = _this1.createElement("canvas");
+					g = _this.getContext("2d",null);
+					g.canvas.width = img.width;
+					g.canvas.height = img.height;
+					g.scale(1.0,-1.0);
+					g.drawImage(img,0,-img.height);
+					data = g.getImageData(0,0,g.canvas.width,g.canvas.height);
+					w = data.width;
+					h = data.height;
+					var cc = data.data.byteLength / (w * h) | 0;
+					switch(cc) {
+					case 1:
+						fmt = haxor_core_PixelFormat.Alpha8;
+						break;
+					case 3:
+						fmt = haxor_core_PixelFormat.RGB8;
+						break;
+					}
 				}
 				var b = new haxor_graphics_texture_Bitmap(w,h,fmt);
-				b.get_buffer().m_buffer.set(data.data);
+				if(data != null) b.get_buffer().m_buffer.set(data.data);
 				if(_g.m_bitmap_callback != null) _g.m_bitmap_callback(b,1.0);
 			};
 			img.src = URL.createObjectURL(this.request.response);
@@ -18009,11 +18361,11 @@ haxor_physics_Physics.Initialize = function() {
 };
 haxor_physics_Physics.SetInteraction = function(p_layer_bit_a,p_layer_bit_b,p_flag) {
 	var f = p_layer_bit_a | p_layer_bit_b;
-	haxor_physics_Physics.m_it.set(f,p_flag);
+	haxor_physics_Physics.m_it.h[f] = p_flag;
 };
 haxor_physics_Physics.CanInteract = function(p_layer_bit_a,p_layer_bit_b) {
 	var k = p_layer_bit_a | p_layer_bit_b;
-	if(haxor_physics_Physics.m_it.exists(k)) return haxor_physics_Physics.m_it.get(k); else return false;
+	if(haxor_physics_Physics.m_it.h.hasOwnProperty(k)) return haxor_physics_Physics.m_it.h[k]; else return false;
 };
 var haxor_physics_PhysicsMaterial = function() {
 	haxor_core_Resource.call(this);
@@ -18266,7 +18618,7 @@ var haxor_platform_html_BrowserAgent = function() {
 	if(this.OSVersion != "") r.osversion = this.OSVersion;
 	this.OSMajorVersion = StringTools.trim(this.OSVersion.split(".")[0]);
 	if(this.tablet || this.iosdevice == "ipad" || this.android && (this.OSMajorVersion == "3" || this.OSMajorVersion == "4" && !this.phone) || this.silk) this.tablet = true; else if(this.phone || this.iosdevice == "iphone" || this.iosdevice == "ipod" || this.android || this.blackberry || this.webOS || this.bada) this.phone = true;
-	var v = Std.parseFloat(this.version);
+	var v = parseFloat(this.version);
 	var os_v;
 	if(this.OSVersion == "") os_v = 0; else os_v = Std.parseFloat(this.OSVersion.split(".")[0]);
 	if(this.ie && v >= 10.0 || this.chrome && v >= 20.0 || this.firefox && v >= 20.0 || this.safari && v >= 6.0 || this.opera && v >= 10.0 || this.ios && os_v >= 6.0 || this.blackberry && v >= 10.1) r.a = true; else if(this.ie && v < 10.0 || this.chrome && v < 20.0 || this.firefox && v < 20.0 || this.safari && v < 6.0 || this.opera && v < 10.0 || this.ios && os_v < 6.0) r.c = true; else r.x = true;
@@ -18337,12 +18689,12 @@ haxor_platform_html_Entry.OnWindowLoad = function(p_event) {
 				var _g21 = l.length;
 				while(_g3 < _g21) {
 					var j = _g3++;
-					var e = l.item(j);
-					var _g4 = e.nodeName.toLowerCase();
+					var e1 = l.item(j);
+					var _g4 = e1.nodeName.toLowerCase();
 					switch(_g4) {
 					case "entry":
-						var key = e.getAttribute("key");
-						var val = e.textContent;
+						var key = e1.getAttribute("key");
+						var val = e1.textContent;
 						haxor_core_Asset.Add(key,val);
 						k++;
 						break;
@@ -18363,8 +18715,8 @@ haxor_platform_html_Entry.OnWindowLoad = function(p_event) {
 		return;
 	}
 	haxor_core_Engine.Initialize();
-	var e1 = new haxor_core_Entity("application");
-	haxor_platform_html_Entry.m_application = e1.AddComponent(app_class);
+	var e = new haxor_core_Entity("application");
+	haxor_platform_html_Entry.m_application = e.AddComponent(app_class);
 	if(!js_Boot.__instanceof(haxor_platform_html_Entry.m_application,haxor_core_BaseApplication)) {
 		haxor_core_Console.Log("Haxor> Error. Class [" + app_class_type + "] does not extends Application!");
 		return;
@@ -18380,9 +18732,6 @@ haxor_platform_html_Entry.OnWindowLoad = function(p_event) {
 	haxor_graphics_GL.Initialize(haxor_platform_html_Entry.m_application);
 	haxor_graphics_GL.m_gl.Initialize(app_container_id);
 	haxor_graphics_GL.m_gl.CheckExtensions();
-	haxor_core_Console.Log("Haxor> Creating Stage with [" + app_container_id + "]",1);
-	var stage = new haxor_dom_DOMStage(haxor_platform_html_Entry.m_application.m_container);
-	stage.Parse(haxor_platform_html_Entry.m_application.m_container);
 	haxe_Timer.delay(function() {
 		haxor_platform_html_Entry.m_application.m_container.style.display = cd;
 	},100);
@@ -18847,7 +19196,7 @@ var haxor_platform_html_input_HTMLInputHandler = function(p_target_id) {
 	this.m_events = [];
 	this.m_target.onmousedown = $bind(this,this.OnInputEvent);
 	this.m_target.onmouseover = $bind(this,this.OnInputEvent);
-	this.m_target.onmousewheel = $bind(this,this.OnInputEvent);
+	this.m_target.onwheel = $bind(this,this.OnInputEvent);
 	this.m_target.oncontextmenu = $bind(this,this.OnInputEvent);
 	window.document.onmousemove = $bind(this,this.OnInputEvent);
 	window.document.onmouseup = $bind(this,this.OnInputEvent);
@@ -18866,10 +19215,10 @@ var haxor_platform_html_input_HTMLInputHandler = function(p_target_id) {
 		window.document.addEventListener("touchmove",function(e) {
 			e.preventDefault();
 		},false);
-		this.m_target.ontouchstart = $bind(this,this.OnTouchEvent);
-		window.ontouchmove = $bind(this,this.OnTouchEvent);
-		window.ontouchcancel = $bind(this,this.OnTouchEvent);
-		window.ontouchend = $bind(this,this.OnTouchEvent);
+		this.m_target.addEventListener("touchstart",$bind(this,this.OnTouchEvent));
+		window.addEventListener("touchmove",$bind(this,this.OnTouchEvent));
+		window.addEventListener("touchcancel",$bind(this,this.OnTouchEvent));
+		window.addEventListener("touchend",$bind(this,this.OnTouchEvent));
 	}
 	var t = this.m_target;
 	var nav = this.m_navigator;
@@ -18884,8 +19233,8 @@ haxor_platform_html_input_HTMLInputHandler.prototype = $extend(haxor_input_Input
 		this.UpdateJoystick();
 	}
 	,OnInputEvent: function(p_event) {
-		var e;
-		if(p_event == null) e = window.event; else e = p_event;
+		var e = p_event;
+		if(e == null) e = window.event;
 		var c;
 		c = e;
 		this.m_events.push(c);
@@ -18918,8 +19267,8 @@ haxor_platform_html_input_HTMLInputHandler.prototype = $extend(haxor_input_Input
 		case "wheel":case "mousewheel":case "DOMMouseScroll":
 			var we = p_event;
 			var dw;
-			if(we.wheelDeltaY == null) dw = we.detail * 40; else dw = we.wheelDeltaY;
-			this.OnMouseWheel(dw / 100.0);
+			if(we.deltaY == null) dw = we.detail * 40; else dw = we.deltaY;
+			this.OnMouseWheel(-dw / 100.0);
 			break;
 		case "mousemove":
 			var px = me.pageX;
@@ -18984,7 +19333,7 @@ haxor_platform_html_input_HTMLInputHandler.prototype = $extend(haxor_input_Input
 		var _g = l.length;
 		while(_g1 < _g) {
 			var i = _g1++;
-			var gp = l.item(i);
+			var gp = l[i];
 			if(gp == null) continue;
 			this.OnJoystickStart(gp.index,gp.id);
 			var _g3 = 0;
@@ -19008,9 +19357,9 @@ haxor_platform_html_input_HTMLInputHandler.prototype = $extend(haxor_input_Input
 		var py = 0;
 		var e = p_element;
 		do {
-			px += e.offsetLeft;
-			py += e.offsetTop;
-			e = e.offsetParent;
+			px += e.clientLeft;
+			py += e.clientTop;
+			e = e.parentElement;
 		} while(e != null);
 		px = p_x - px;
 		py = p_y - py;
@@ -19028,7 +19377,7 @@ var haxor_thread_Kernel = function(p_width,p_height,p_readable,p_format) {
 	this.m_output.set_minFilter(this.m_output.set_magFilter(haxor_core_TextureFilter.Nearest));
 	this.m_output.set_name("Kernel" + this.get_uid() + "Output");
 	var len = p_width * p_height;
-	switch(p_format[1]) {
+	if(p_format != null) switch(p_format[1]) {
 	case 0:
 		this.m_result = new haxor_io_Buffer(len);
 		break;
@@ -19290,7 +19639,13 @@ var js_Boot = function() { };
 $hxClasses["js.Boot"] = js_Boot;
 js_Boot.__name__ = ["js","Boot"];
 js_Boot.getClass = function(o) {
-	if((o instanceof Array) && o.__enum__ == null) return Array; else return o.__class__;
+	if((o instanceof Array) && o.__enum__ == null) return Array; else {
+		var cl = o.__class__;
+		if(cl != null) return cl;
+		var name = js_Boot.__nativeClassName(o);
+		if(name != null) return js_Boot.__resolveNativeClass(name);
+		return null;
+	}
 };
 js_Boot.__string_rec = function(o,s) {
 	if(o == null) return "null";
@@ -19302,18 +19657,18 @@ js_Boot.__string_rec = function(o,s) {
 		if(o instanceof Array) {
 			if(o.__enum__) {
 				if(o.length == 2) return o[0];
-				var str = o[0] + "(";
+				var str2 = o[0] + "(";
 				s += "\t";
 				var _g1 = 2;
 				var _g = o.length;
 				while(_g1 < _g) {
-					var i = _g1++;
-					if(i != 2) str += "," + js_Boot.__string_rec(o[i],s); else str += js_Boot.__string_rec(o[i],s);
+					var i1 = _g1++;
+					if(i1 != 2) str2 += "," + js_Boot.__string_rec(o[i1],s); else str2 += js_Boot.__string_rec(o[i1],s);
 				}
-				return str + ")";
+				return str2 + ")";
 			}
 			var l = o.length;
-			var i1;
+			var i;
 			var str1 = "[";
 			s += "\t";
 			var _g2 = 0;
@@ -19330,12 +19685,12 @@ js_Boot.__string_rec = function(o,s) {
 		} catch( e ) {
 			return "???";
 		}
-		if(tostr != null && tostr != Object.toString) {
+		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
 			var s2 = o.toString();
 			if(s2 != "[object Object]") return s2;
 		}
 		var k = null;
-		var str2 = "{\n";
+		var str = "{\n";
 		s += "\t";
 		var hasp = o.hasOwnProperty != null;
 		for( var k in o ) {
@@ -19345,12 +19700,12 @@ js_Boot.__string_rec = function(o,s) {
 		if(k == "prototype" || k == "__class__" || k == "__super__" || k == "__interfaces__" || k == "__properties__") {
 			continue;
 		}
-		if(str2.length != 2) str2 += ", \n";
-		str2 += s + k + " : " + js_Boot.__string_rec(o[k],s);
+		if(str.length != 2) str += ", \n";
+		str += s + k + " : " + js_Boot.__string_rec(o[k],s);
 		}
 		s = s.substring(1);
-		str2 += "\n" + s + "}";
-		return str2;
+		str += "\n" + s + "}";
+		return str;
 	case "function":
 		return "<function>";
 	case "string":
@@ -19394,6 +19749,8 @@ js_Boot.__instanceof = function(o,cl) {
 			if(typeof(cl) == "function") {
 				if(o instanceof cl) return true;
 				if(js_Boot.__interfLoop(js_Boot.getClass(o),cl)) return true;
+			} else if(typeof(cl) == "object" && js_Boot.__isNativeObj(cl)) {
+				if(o instanceof cl) return true;
 			}
 		} else return false;
 		if(cl == Class && o.__name__ != null) return true;
@@ -19403,6 +19760,17 @@ js_Boot.__instanceof = function(o,cl) {
 };
 js_Boot.__cast = function(o,t) {
 	if(js_Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
+};
+js_Boot.__nativeClassName = function(o) {
+	var name = js_Boot.__toStr.call(o).slice(8,-1);
+	if(name == "Object" || name == "Function" || name == "Math" || name == "JSON") return null;
+	return name;
+};
+js_Boot.__isNativeObj = function(o) {
+	return js_Boot.__nativeClassName(o) != null;
+};
+js_Boot.__resolveNativeClass = function(name) {
+	if(typeof window != "undefined") return window[name]; else return global[name];
 };
 var js_html__$CanvasElement_CanvasUtil = function() { };
 $hxClasses["js.html._CanvasElement.CanvasUtil"] = js_html__$CanvasElement_CanvasUtil;
@@ -19417,6 +19785,191 @@ js_html__$CanvasElement_CanvasUtil.getContextWebGL = function(canvas,attribs) {
 		if(ctx != null) return ctx;
 	}
 	return null;
+};
+var js_html_compat_ArrayBuffer = function(a) {
+	if((a instanceof Array) && a.__enum__ == null) {
+		this.a = a;
+		this.byteLength = a.length;
+	} else {
+		var len = a;
+		this.a = [];
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			this.a[i] = 0;
+		}
+		this.byteLength = len;
+	}
+};
+$hxClasses["js.html.compat.ArrayBuffer"] = js_html_compat_ArrayBuffer;
+js_html_compat_ArrayBuffer.__name__ = ["js","html","compat","ArrayBuffer"];
+js_html_compat_ArrayBuffer.sliceImpl = function(begin,end) {
+	var u = new Uint8Array(this,begin,end == null?null:end - begin);
+	var result = new ArrayBuffer(u.byteLength);
+	var resultArray = new Uint8Array(result);
+	resultArray.set(u);
+	return result;
+};
+js_html_compat_ArrayBuffer.prototype = {
+	slice: function(begin,end) {
+		return new js_html_compat_ArrayBuffer(this.a.slice(begin,end));
+	}
+	,__class__: js_html_compat_ArrayBuffer
+};
+var js_html_compat_DataView = function(buffer,byteOffset,byteLength) {
+	this.buf = buffer;
+	if(byteOffset == null) this.offset = 0; else this.offset = byteOffset;
+	if(byteLength == null) this.length = buffer.byteLength - this.offset; else this.length = byteLength;
+	if(this.offset < 0 || this.length < 0 || this.offset + this.length > buffer.byteLength) throw haxe_io_Error.OutsideBounds;
+};
+$hxClasses["js.html.compat.DataView"] = js_html_compat_DataView;
+js_html_compat_DataView.__name__ = ["js","html","compat","DataView"];
+js_html_compat_DataView.prototype = {
+	getInt8: function(byteOffset) {
+		var v = this.buf.a[this.offset + byteOffset];
+		if(v >= 128) return v - 256; else return v;
+	}
+	,getUint8: function(byteOffset) {
+		return this.buf.a[this.offset + byteOffset];
+	}
+	,getInt16: function(byteOffset,littleEndian) {
+		var v = this.getUint16(byteOffset,littleEndian);
+		if(v >= 32768) return v - 65536; else return v;
+	}
+	,getUint16: function(byteOffset,littleEndian) {
+		if(littleEndian) return this.buf.a[this.offset + byteOffset] | this.buf.a[this.offset + byteOffset + 1] << 8; else return this.buf.a[this.offset + byteOffset] << 8 | this.buf.a[this.offset + byteOffset + 1];
+	}
+	,getInt32: function(byteOffset,littleEndian) {
+		var p = this.offset + byteOffset;
+		var a = this.buf.a[p++];
+		var b = this.buf.a[p++];
+		var c = this.buf.a[p++];
+		var d = this.buf.a[p++];
+		if(littleEndian) return a | b << 8 | c << 16 | d << 24; else return d | c << 8 | b << 16 | a << 24;
+	}
+	,getUint32: function(byteOffset,littleEndian) {
+		var v = this.getInt32(byteOffset,littleEndian);
+		if(v < 0) return v + 4294967296.; else return v;
+	}
+	,getFloat32: function(byteOffset,littleEndian) {
+		return haxe_io_FPHelper.i32ToFloat(this.getInt32(byteOffset,littleEndian));
+	}
+	,getFloat64: function(byteOffset,littleEndian) {
+		var a = this.getInt32(byteOffset,littleEndian);
+		var b = this.getInt32(byteOffset + 4,littleEndian);
+		return haxe_io_FPHelper.i64ToDouble(littleEndian?a:b,littleEndian?b:a);
+	}
+	,setInt8: function(byteOffset,value) {
+		if(value < 0) this.buf.a[byteOffset + this.offset] = value + 128 & 255; else this.buf.a[byteOffset + this.offset] = value & 255;
+	}
+	,setUint8: function(byteOffset,value) {
+		this.buf.a[byteOffset + this.offset] = value & 255;
+	}
+	,setInt16: function(byteOffset,value,littleEndian) {
+		this.setUint16(byteOffset,value < 0?value + 65536:value,littleEndian);
+	}
+	,setUint16: function(byteOffset,value,littleEndian) {
+		var p = byteOffset + this.offset;
+		if(littleEndian) {
+			this.buf.a[p] = value & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+		} else {
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p] = value & 255;
+		}
+	}
+	,setInt32: function(byteOffset,value,littleEndian) {
+		this.setUint32(byteOffset,value,littleEndian);
+	}
+	,setUint32: function(byteOffset,value,littleEndian) {
+		var p = byteOffset + this.offset;
+		if(littleEndian) {
+			this.buf.a[p++] = value & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p++] = value >> 16 & 255;
+			this.buf.a[p++] = value >>> 24;
+		} else {
+			this.buf.a[p++] = value >>> 24;
+			this.buf.a[p++] = value >> 16 & 255;
+			this.buf.a[p++] = value >> 8 & 255;
+			this.buf.a[p++] = value & 255;
+		}
+	}
+	,setFloat32: function(byteOffset,value,littleEndian) {
+		this.setUint32(byteOffset,haxe_io_FPHelper.floatToI32(value),littleEndian);
+	}
+	,setFloat64: function(byteOffset,value,littleEndian) {
+		var i64 = haxe_io_FPHelper.doubleToI64(value);
+		if(littleEndian) {
+			this.setUint32(byteOffset,i64.low);
+			this.setUint32(byteOffset,i64.high);
+		} else {
+			this.setUint32(byteOffset,i64.high);
+			this.setUint32(byteOffset,i64.low);
+		}
+	}
+	,__class__: js_html_compat_DataView
+};
+var js_html_compat_Uint8Array = function() { };
+$hxClasses["js.html.compat.Uint8Array"] = js_html_compat_Uint8Array;
+js_html_compat_Uint8Array.__name__ = ["js","html","compat","Uint8Array"];
+js_html_compat_Uint8Array._new = function(arg1,offset,length) {
+	var arr;
+	if(typeof(arg1) == "number") {
+		arr = [];
+		var _g = 0;
+		while(_g < arg1) {
+			var i = _g++;
+			arr[i] = 0;
+		}
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js_html_compat_ArrayBuffer(arr);
+	} else if(js_Boot.__instanceof(arg1,js_html_compat_ArrayBuffer)) {
+		var buffer = arg1;
+		if(offset == null) offset = 0;
+		if(length == null) length = buffer.byteLength - offset;
+		if(offset == 0) arr = buffer.a; else arr = buffer.a.slice(offset,offset + length);
+		arr.byteLength = arr.length;
+		arr.byteOffset = offset;
+		arr.buffer = buffer;
+	} else if((arg1 instanceof Array) && arg1.__enum__ == null) {
+		arr = arg1.slice();
+		arr.byteLength = arr.length;
+		arr.byteOffset = 0;
+		arr.buffer = new js_html_compat_ArrayBuffer(arr);
+	} else throw "TODO " + Std.string(arg1);
+	arr.subarray = js_html_compat_Uint8Array._subarray;
+	arr.set = js_html_compat_Uint8Array._set;
+	return arr;
+};
+js_html_compat_Uint8Array._set = function(arg,offset) {
+	var t = this;
+	if(js_Boot.__instanceof(arg.buffer,js_html_compat_ArrayBuffer)) {
+		var a = arg;
+		if(arg.byteLength + offset > t.byteLength) throw "set() outside of range";
+		var _g1 = 0;
+		var _g = arg.byteLength;
+		while(_g1 < _g) {
+			var i = _g1++;
+			t[i + offset] = a[i];
+		}
+	} else if((arg instanceof Array) && arg.__enum__ == null) {
+		var a1 = arg;
+		if(a1.length + offset > t.byteLength) throw "set() outside of range";
+		var _g11 = 0;
+		var _g2 = a1.length;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			t[i1 + offset] = a1[i1];
+		}
+	} else throw "TODO";
+};
+js_html_compat_Uint8Array._subarray = function(start,end) {
+	var t = this;
+	var a = js_html_compat_Uint8Array._new(t.slice(start,end));
+	a.byteOffset = start;
+	return a;
 };
 var utils_LoaderHTML = function() {
 	this.m_container = window.document.getElementById("loader");
@@ -19442,16 +19995,7 @@ utils_LoaderHTML.prototype = {
 };
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
-Math.NaN = Number.NaN;
-Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
-Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
 $hxClasses.Math = Math;
-Math.isFinite = function(i) {
-	return isFinite(i);
-};
-Math.isNaN = function(i1) {
-	return isNaN(i1);
-};
 String.prototype.__class__ = $hxClasses.String = String;
 String.__name__ = ["String"];
 $hxClasses.Array = Array;
@@ -19466,13 +20010,18 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = $hxClasses.Class = { __name__ : ["Class"]};
 var Enum = { };
-Xml.Element = "element";
-Xml.PCData = "pcdata";
-Xml.CData = "cdata";
-Xml.Comment = "comment";
-Xml.DocType = "doctype";
-Xml.ProcessingInstruction = "processingInstruction";
-Xml.Document = "document";
+var __map_reserved = {}
+var ArrayBuffer = typeof(window) != "undefined" && window.ArrayBuffer || typeof(global) != "undefined" && global.ArrayBuffer || js_html_compat_ArrayBuffer;
+if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
+var DataView = typeof(window) != "undefined" && window.DataView || typeof(global) != "undefined" && global.DataView || js_html_compat_DataView;
+var Uint8Array = typeof(window) != "undefined" && window.Uint8Array || typeof(global) != "undefined" && global.Uint8Array || js_html_compat_Uint8Array._new;
+Xml.Element = 0;
+Xml.PCData = 1;
+Xml.CData = 2;
+Xml.Comment = 3;
+Xml.DocType = 4;
+Xml.ProcessingInstruction = 5;
+Xml.Document = 6;
 dungeon_GameLayer.Default = 1;
 dungeon_GameLayer.Player = 2;
 dungeon_GameLayer.CameraArea = 4;
@@ -19482,15 +20031,20 @@ dungeon_Player.TOP_SPEED = 150;
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);
 haxe_ds_ObjectMap.count = 0;
+haxe_io_FPHelper.i64tmp = (function($this) {
+	var $r;
+	var x = new haxe__$Int64__$_$_$Int64(0,0);
+	$r = x;
+	return $r;
+}(this));
 haxe_xml_Parser.escapes = (function($this) {
 	var $r;
 	var h = new haxe_ds_StringMap();
-	h.set("lt","<");
-	h.set("gt",">");
-	h.set("amp","&");
-	h.set("quot","\"");
-	h.set("apos","'");
-	h.set("nbsp",String.fromCharCode(160));
+	if(__map_reserved.lt != null) h.setReserved("lt","<"); else h.h["lt"] = "<";
+	if(__map_reserved.gt != null) h.setReserved("gt",">"); else h.h["gt"] = ">";
+	if(__map_reserved.amp != null) h.setReserved("amp","&"); else h.h["amp"] = "&";
+	if(__map_reserved.quot != null) h.setReserved("quot","\""); else h.h["quot"] = "\"";
+	if(__map_reserved.apos != null) h.setReserved("apos","'"); else h.h["apos"] = "'";
 	$r = h;
 	return $r;
 }(this));
@@ -20191,9 +20745,9 @@ haxor_input_KeyCode.Touch3 = 3;
 haxor_input_KeyCode.Touch4 = 4;
 haxor_input_KeyCode.Touch5 = 5;
 haxor_math_Mathf.Epsilon = 0.0001;
-haxor_math_Mathf.NaN = Math.NaN;
-haxor_math_Mathf.Infinity = Math.POSITIVE_INFINITY;
-haxor_math_Mathf.NegativeInfinity = Math.NEGATIVE_INFINITY;
+haxor_math_Mathf.NaN = NaN;
+haxor_math_Mathf.Infinity = Infinity;
+haxor_math_Mathf.NegativeInfinity = -Infinity;
 haxor_math_Mathf.E = 2.7182818284590452353602874713527;
 haxor_math_Mathf.PI = 3.1415926535897932384626433832795028841971693993751058;
 haxor_math_Mathf.HalfPI = 1.5707963267948966192313216916398;
@@ -20213,5 +20767,7 @@ haxor_math_Mathf.Float2Long = 4294967296.0;
 haxor_net_Web.root = "";
 haxor_thread_ParticleKernel.DATA_SIZE = 64;
 haxor_thread_ParticleKernel.particle_kernel_source = "\r\n\t<shader id=\"haxor/kernel/ParticleKernel\">\t\r\n\t\t<vertex precision=\"high\">\r\n\t\tattribute vec3 vertex;\t\t\t\r\n\t\tvarying vec2 iterator;\t\t\t\t\r\n\t\tvoid main(void) \r\n\t\t{\t\r\n\t\t\tgl_Position = vec4(vertex,1.0);\r\n\t\t\titerator.x = (vertex.x+1.0)*0.5;\r\n\t\t\titerator.y = (vertex.y+1.0)*0.5;\r\n\t\t}\t\t\r\n\t\t</vertex>\r\n\t\t\r\n\t\t<fragment precision=\"high\">\r\n\t\t\r\n\t\t\t#define EmmiterType\t\t\t int(System[0].x)\r\n\t\t\t#define EmitterSize\t\t\t System[0].yzw\r\n\t\t\t\r\n\t\t\t#define IsSurfaceEmission\t (System[1].x > 0.0)\r\n\t\t\t#define IsRandomDirection\t (System[1].y > 0.0)\t\t\t\r\n\t\t\t#define IsLocal\t\t\t\t (System[1].z > 0.0)\r\n\t\t\t#define IsLoop\t\t\t\t (System[1].w > 0.0)\r\n\t\t\t\r\n\t\t\t#define SystemState\t\t\t int(System[2].x)\r\n\t\t\t#define SystemProgress\t\t System[2].y\t\t\t\r\n\t\t\t#define DeltaTime\t\t \t System[2].w\r\n\t\t\t\r\n\t\t\t#define StartSpeed\t\t\t System[3]\r\n\t\t\t#define StartSize0\t\t\t System[4]\r\n\t\t\t#define StartSize1\t\t\t System[5]\r\n\t\t\t#define StartLife\t\t\t System[6]\r\n\t\t\t#define StartRotation0\t\t System[7]\r\n\t\t\t#define StartRotation1\t\t System[8]\r\n\t\t\t\r\n\t\t\t#define LifeSpeed\t\t\t System[9]\r\n\t\t\t#define LifeMotion0\t\t\t System[10]\r\n\t\t\t#define LifeMotion1\t\t\t System[11]\r\n\t\t\t#define LifeSize0\t\t\t System[12]\r\n\t\t\t#define LifeSize1\t\t\t System[13]\r\n\t\t\t#define LifeRotation0\t\t System[14]\r\n\t\t\t#define LifeRotation1\t\t System[15]\r\n\t\t\t\r\n\t\t\t#define SystemForce\t\t\t System[16].xyz\r\n\t\t\t\r\n\t\t\t#define WorldMatrix\t\t\t mat4(System[17].xyzw, System[18].xyzw, System[19].xyzw, vec4(0,0,0,1))\r\n\t\t\t\r\n\t\t\t#define StartFrame\t\t\t System[20]\r\n\t\t\t#define SheetFrameWidth\t \t System[21].x\r\n\t\t\t#define SheetFrameHeight \t System[21].y\r\n\t\t\t#define SheetFPS\t\t \t System[21].z\r\n\t\t\t#define SheetWrap\t\t \t System[21].w\r\n\t\t\t#define SheetLength\t\t \t System[22].x\r\n\t\t\t#define EmitterRangeX\t \t System[22].yz\r\n\t\t\t#define EmitterRangeY\t \t System[23].xy\r\n\t\t\t#define EmitterRangeZ\t \t System[23].zw\r\n\t\t\t#define SystemEmissionStart\t System[24].x\r\n\t\t\t#define SystemEmissionCount\t System[24].y\r\n\t\t\t\t\t\t\r\n\t\t\t#define PARTICLE_LENGTH\t\t 8.0\r\n\t\t\t\r\n\t\t\t#define EMITTER_SPHERE\t\t 0\r\n\t\t\t#define EMITTER_BOX\t\t\t 1\r\n\t\t\t#define EMITTER_CONE\t\t 2\r\n\t\t\t#define EMITTER_CYLINDER\t 3\r\n\t\t\t\r\n\t\t\t#define PARTICLE_STATUS\t\t 0\r\n\t\t\t#define PARTICLE_POSITION\t 1\r\n\t\t\t#define PARTICLE_ROTATION\t 2\r\n\t\t\t#define PARTICLE_SIZE\t\t 3\r\n\t\t\t#define PARTICLE_VELOCITY\t 4\r\n\t\t\t#define PARTICLE_COLOR\t\t 5\r\n\t\t\t#define PARTICLE_START\t\t 6\r\n\t\t\t#define PARTICLE_NULL\t\t 7\r\n\t\t\t\r\n\t\t\t#define STATE_NONE\t\t 0\r\n\t\t\t#define STATE_RESET\t\t 1\r\n\t\t\t#define STATE_UPDATE\t 2\r\n\t\t\t#define STATE_LOAD   \t 3\r\n\t\t\t\r\n\t\t\t#define PARTICLE_DISABLED\t 0\r\n\t\t\t#define PARTICLE_INIT\t\t 1\r\n\t\t\t#define PARTICLE_ENABLED\t 2\r\n\t\t\t#define PARTICLE_DEAD\t\t 3\r\n\t\t\t\r\n\t\t\tfloat particle_id;\t\t\t\r\n\t\t\tfloat particle_field;\r\n\t\t\tfloat fragment_id;\r\n\t\t\t\r\n\t\t\tvarying vec2 \t\titerator;\t\t\t\r\n\t\t\tuniform sampler2D \tData;\t\t\t\r\n\t\t\tuniform sampler2D \tStartColor;\t\t\t\r\n\t\t\tuniform sampler2D \tColor;\t\t\t\r\n\t\t\tuniform float \t\twidth;\t\t\t\r\n\t\t\tuniform float \t\theight;\t\t\t\r\n\t\t\tuniform vec4  \t\tSystem[25];\t\t\t\r\n\t\t\tuniform float \t\tRandomSeed;\t\t\r\n\t\t\tuniform sampler2D \tRandomTexture;\r\n\t\t\t\r\n\t\t\t\r\n\t\t\tvec4 Random()\r\n\t\t\t{\r\n\t\t\t\tfloat tw   = 1.0/128.0;\r\n\t\t\t\tfloat seed = RandomSeed * 262144.0;\r\n\t\t\t\tfloat idx  = mod(seed+fragment_id,128.0) * tw;\r\n\t\t\t\tfloat idy  = floor((seed+fragment_id) * tw)  * tw;\r\n\t\t\t\tvec2  ruv  = vec2(idx,idy);\r\n\t\t\t\tseed      += tw * fract(sin(dot(ruv ,vec2(12.9898,78.233))) * 43758.5453);\r\n\t\t\t\treturn texture2D(RandomTexture, ruv);\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec3 RandomVector() { return (Random().xyz - 0.5)*2.0; }\r\n\t\t\t\r\n\t\t\tfloat Lerp(float a, float b,float r) { return a + ((b-a)*r); }\r\n\t\t\tvec2  Lerp(vec2  a, vec2  b,float r) { return a + ((b-a)*r); }\r\n\t\t\tvec3  Lerp(vec3  a, vec3  b,float r) { return a + ((b-a)*r); }\r\n\t\t\tvec4  Lerp(vec4  a, vec4  b,float r) { return a + ((b-a)*r); }\r\n\t\t\t\r\n\t\t\tvec3 GetSphereRandomPosition(bool p_surface,float p_radius)\t\r\n\t\t\t{\t\r\n\t\t\t\tfloat r   = (p_radius*0.5);\r\n\t\t\t\tvec3 v    = RandomVector();\t\t\t\t\t\t\t\t\r\n\t\t\t\treturn p_surface ? (normalize(v) * r) : (v * r); \r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec3 GetBoxRandomPosition(bool p_surface,vec3 p_size)\r\n\t\t\t{\t\t\t\t\r\n\t\t\t\tvec3 hs  = p_size*0.5;\r\n\t\t\t\tif(p_surface)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec3 p = GetSphereRandomPosition(true,length(p_size));\r\n\t\t\t\t\tp.x = clamp(p.x,-hs.x,hs.x);\r\n\t\t\t\t\tp.y = clamp(p.y,-hs.y,hs.y);\r\n\t\t\t\t\tp.z = clamp(p.z,-hs.z,hs.z);\r\n\t\t\t\t\treturn p;\r\n\t\t\t\t}\t\t\t\r\n\t\t\t\tvec3 rnd = Random().xyz;\r\n\t\t\t\treturn vec3( Lerp(-hs.x,hs.x,rnd.x), Lerp(-hs.y,hs.y,rnd.y), Lerp(-hs.z,hs.z,rnd.z));\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec3 GetEmitterRandomPosition()\r\n\t\t\t{\r\n\t\t\t\tint id \t\t\t= EmmiterType;\r\n\t\t\t\tbool is_surface = IsSurfaceEmission;\r\n\t\t\t\t\r\n\t\t\t\tif(id == EMITTER_SPHERE) return GetSphereRandomPosition(is_surface,EmitterSize.x);\r\n\t\t\t\tif(id == EMITTER_BOX) \t return GetBoxRandomPosition(is_surface,EmitterSize);\r\n\t\t\t\treturn GetSphereRandomPosition(is_surface,EmitterSize.x);\r\n\t\t\t}\r\n\t\t\t\t\t\t\r\n\t\t\tvec3 SampleParticleAttribVec3(vec4 p_start,vec4 p_end,float p_random)\r\n\t\t\t{\r\n\t\t\t\tfloat c  = p_start.w;\r\n\t\t\t\tfloat rf = p_end.w;\t\t\t\t\r\n\t\t\t\tvec3 a   = p_start.xyz;\r\n\t\t\t\tvec3 b   = p_end.xyz;\r\n\t\t\t\treturn (rf > 0.0) ? Lerp(a,b,p_random) : Lerp(a,b,pow(SystemProgress,c));\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tfloat SampleParticleAttribFloat(vec4 p_attribute,float p_random)\r\n\t\t\t{\r\n\t\t\t\tvec4 a   = p_attribute;\t\t\t\t\r\n\t\t\t\treturn (a.w > 0.0) ? Lerp(a.x,a.y,p_random) : Lerp(a.x,a.y,pow(SystemProgress,a.z));\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec4 ParticleData(float p_id,int p_field)\r\n\t\t\t{\r\n\t\t\t\tfloat pix = floor(p_id) * PARTICLE_LENGTH;\r\n\t\t\t\tfloat f   = float(p_field);\r\n\t\t\t\tfloat w   = floor(width);\r\n\t\t\t\tfloat h   = floor(height);\r\n\t\t\t\tfloat px  = mod(pix+f,w) / (w-1.0);\r\n\t\t\t\tfloat py  = floor((pix+f)/w) / (h-1.0);\r\n\t\t\t\treturn texture2D(Data,vec2(px,py));\r\n\t\t\t}\r\n\t\t\r\n\t\t\tvec4 ParticleStatus()   \t{ return ParticleData(particle_id,PARTICLE_STATUS); \t}\r\n\t\t\tvec4 ParticlePosition() \t{ return ParticleData(particle_id,PARTICLE_POSITION); \t}\r\n\t\t\tvec4 ParticleRotation() \t{ return ParticleData(particle_id,PARTICLE_ROTATION); \t}\r\n\t\t\tvec4 ParticleSize() \t\t{ return ParticleData(particle_id,PARTICLE_SIZE); \t\t}\r\n\t\t\tvec4 ParticleVelocity()\t\t{ return ParticleData(particle_id,PARTICLE_VELOCITY);\t}\r\n\t\t\tvec4 ParticleColor() \t\t{ return ParticleData(particle_id,PARTICLE_COLOR); \t\t}\r\n\t\t\tvec4 ParticleStart() \t\t{ return ParticleData(particle_id,PARTICLE_START); \t\t}\r\n\t\t\r\n\t\t\t\r\n\t\t\tvec4 UpdateStatus(int p_state,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\t//[state][life][duration][frame]\r\n\t\t\t\tvec4 p   = p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_DISABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec4 rnd = Random();\r\n\t\t\t\t\tp.x = 1.0;\r\n\t\t\t\t\tp.y = 0.0;\r\n\t\t\t\t\tp.z = SampleParticleAttribFloat(StartLife,rnd.x);\r\n\t\t\t\t\tp.w = SampleParticleAttribFloat(StartFrame,rnd.y);\r\n\t\t\t\t\treturn p;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_INIT)\r\n\t\t\t\t{\r\n\t\t\t\t\tp.x = 2.0;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_ENABLED)\r\n\t\t\t\t{\t\t\t\t\t\t\r\n\t\t\t\t\tif(p.y >= p.z)\r\n\t\t\t\t\t{\r\n\t\t\t\t\t\tp.y = p.z;\r\n\t\t\t\t\t\tp.x = 3.0;\r\n\t\t\t\t\t\treturn p;\r\n\t\t\t\t\t}\r\n\t\t\t\t\tp.y += DeltaTime;\t\t\t\t\t\r\n\t\t\t\t\tp.w += SheetFPS * DeltaTime;\r\n\t\t\t\t\tif(p.w >= SheetLength)\r\n\t\t\t\t\t{\r\n\t\t\t\t\t\tp.w = SheetLength;\t\t\t\t\t\t\r\n\t\t\t\t\t\tif(int(SheetWrap)==1) p.w=0.0;\t\t\t\t\t\t\r\n\t\t\t\t\t}\r\n\t\t\t\t\treturn p;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\treturn p;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec4 UpdatePosition(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   = p_status;\r\n\t\t\t\tvec4 c   = p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_DISABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tc.xyz = GetEmitterRandomPosition();\r\n\t\t\t\t\tif(!IsLocal) { c.w=1.0; c = c * WorldMatrix; }\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_ENABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tfloat r = p.z <= 0.0 ? 0.0 : (p.y/p.z);\r\n\t\t\t\t\tvec3  v = ParticleVelocity().xyz * Lerp(LifeMotion0.xyz,LifeMotion1.xyz,r);\t\t\t\t\t\r\n\t\t\t\t\tfloat speed =  Lerp(StartSpeed.x,StartSpeed.y,ParticleStart().x) * Lerp(LifeSpeed.x,LifeSpeed.y,r);\t\t\t\t\t\r\n\t\t\t\t\tc.xyz += v * speed * DeltaTime;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\t\r\n\t\t\tvec4 UpdateVelocity(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   \t\t= p_status;\t\t\t\t\r\n\t\t\t\tvec4 c   \t\t= p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_INIT)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec4 rnd;\r\n\t\t\t\t\tc.xyz  = IsRandomDirection ? normalize((Random().xyz-0.5)*2.0) : normalize(ParticlePosition().xyz);\t\t\t\t\t\r\n\t\t\t\t\tc.x = clamp(c.x,EmitterRangeX.x,EmitterRangeX.y);\r\n\t\t\t\t\tc.y = clamp(c.y,EmitterRangeY.x,EmitterRangeY.y);\r\n\t\t\t\t\tc.z = clamp(c.z,EmitterRangeZ.x,EmitterRangeZ.y);\r\n\t\t\t\t\tc = normalize(c);\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_ENABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tc.xyz += SystemForce * DeltaTime;\t\t\t\t\t\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec4 UpdateRotation(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   = p_status;\r\n\t\t\t\tvec4 c   = p_current;\r\n\t\t\t\tc = vec4(0,0,0,0);\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec4 UpdateSize(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   = p_status;\r\n\t\t\t\tvec4 c   = p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_DISABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tfloat r = p.z <= 0.0 ? 0.0 : (p.y/p.z);\r\n\t\t\t\t\tc.xyz = Lerp(StartSize0.xyz,StartSize1.xyz,ParticleStart().y) * Lerp(LifeSize0.xyz,LifeSize1.xyz,r);\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_ENABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tfloat r = p.z <= 0.0 ? 0.0 : (p.y/p.z);\r\n\t\t\t\t\tc.xyz = Lerp(StartSize0.xyz,StartSize1.xyz,ParticleStart().y) * Lerp(LifeSize0.xyz,LifeSize1.xyz,r);\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\t\r\n\t\t\tvec4 UpdateColor(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   = p_status;\r\n\t\t\t\tvec4 c   = p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_DISABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec4 c0 = texture2D(StartColor,vec2(ParticleStart().z,0.0));\r\n\t\t\t\t\tfloat r = p.z <= 0.0 ? 0.0 : (p.y/p.z);\r\n\t\t\t\t\tvec4 c1 = texture2D(Color,vec2(r,0.0));\r\n\t\t\t\t\tc = c0 * c1;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_ENABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec4 c0 = texture2D(StartColor,vec2(ParticleStart().z,0.0));\r\n\t\t\t\t\tfloat r = p.z <= 0.0 ? 0.0 : (p.y/p.z);\r\n\t\t\t\t\tvec4 c1 = texture2D(Color,vec2(r,0.0));\r\n\t\t\t\t\tc = c0 * c1;\r\n\t\t\t\t}\r\n\t\t\t\t\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tvec4 UpdateStart(int p_state,vec4 p_status,vec4 p_current)\r\n\t\t\t{\r\n\t\t\t\tvec4 p   \t\t= p_status;\t\t\t\t\r\n\t\t\t\tvec4 c   \t\t= p_current;\r\n\t\t\t\t\r\n\t\t\t\tif(int(p.x) == PARTICLE_DISABLED)\r\n\t\t\t\t{\r\n\t\t\t\t\tvec4 rnd = Random();\r\n\t\t\t\t\tc.x = StartSpeed.w > 0.0 ? rnd.x : SystemProgress;\r\n\t\t\t\t\tc.y = StartSize1.w > 0.0 ? rnd.y : SystemProgress;\r\n\t\t\t\t\tc.z = SystemProgress;\r\n\t\t\t\t\tc.w = StartRotation1.w > 0.0 ? rnd.w : SystemProgress;\r\n\t\t\t\t}\r\n\t\t\t\t\t\t\t\t\r\n\t\t\t\treturn c;\r\n\t\t\t}\r\n\t\t\t\r\n\t\t\tuniform float Time;\r\n\t\t\t\r\n\t\t\tvoid main(void) \r\n\t\t\t{\t\t\r\n\t\t\t\tfloat count\t\t = floor(SystemEmissionCount);\t\t\t\t\r\n\t\t\t\tif(count <= 0.0) { gl_FragColor = vec4(0,0,0,1); return; }\r\n\t\t\t\tfloat ix\t     = iterator.x;\r\n\t\t\t\tfloat iy\t     = iterator.y;\t\t\r\n\t\t\t\tfloat iw         = 1.0 / width;\t\t\t\t\r\n\t\t\t\tfloat ih         = 1.0 / height;\t\t\t\t\r\n\t\t\t\t//float hiw        = iw*0.5;\t\t\t\t\r\n\t\t\t\t//float hih        = ih*0.5;\t\t\t\t\r\n\t\t\t\t//ix = (ix - hiw) / (1.0 - iw);\r\n\t\t\t\t//iy = (iy - hih) / (1.0 - ih);\r\n\t\t\t\t\r\n\t\t\t\tfloat size       = width * height;\r\n\t\t\t\tfloat max_count  = floor((width * height)/PARTICLE_LENGTH);\r\n\t\t\t\tfloat px         = floor(ix * width);\r\n\t\t\t\tfloat py         = floor(iy * height);\r\n\t\t\t\tfloat pix\t     = (px + (py * width));\r\n\t\t\t\t\r\n\t\t\t\t//if (pix >= (size - PARTICLE_LENGTH)) { gl_FragColor = vec4(0, 0, 0, 1); return; }\r\n\t\t\t\t\r\n\t\t\t\tfloat id\t\t = ((pix / (PARTICLE_LENGTH)));\r\n\t\t\t\tfloat field\t\t = mod(pix,PARTICLE_LENGTH);\r\n\t\t\t\t\r\n\t\t\t\tparticle_id = id;\r\n\t\t\t\tfragment_id = pix;\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\tfloat emin \t\t = floor(mod(SystemEmissionStart,max_count));\r\n\t\t\t\tfloat emax \t\t = floor(mod(SystemEmissionStart+count,max_count));\r\n\t\t\t\t\r\n\t\t\t\tif(emin > emax)\r\n\t\t\t\t{\r\n\t\t\t\t\tif(id < emin) \r\n\t\t\t\t\tif(id >= emax) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }\r\n\t\t\t\t}\r\n\t\t\t\telse\r\n\t\t\t\t{\t\t\t\t\r\n\t\t\t\t\tif(id < emin)  { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }\r\n\t\t\t\t\tif(id >= emax) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }\r\n\t\t\t\t}\r\n\t\t\t\t//*/\r\n\t\t\t\t\r\n\t\t\t\t/*\r\n\t\t\t\tfloat ck = floor(mod(pix, 2.0)) <= 0.0 ? 0.8 : 1.0;\t\t\t\t\r\n\t\t\t\tck = field / PARTICLE_LENGTH;\t\t\t\t\r\n\t\t\t\tvec4 mc = vec4(ck, ck, ck, 1.0);\t\t\t\t\t\r\n\t\t\t\t//gl_FragColor = mc;\r\n\t\t\t\t//return;\r\n\t\t\t\t//*/\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t/*\r\n\t\t\t\tvec4 c0 = vec4(1.0, 0.0, 0.0, 1.0)*mc;\r\n\t\t\t\tvec4 c1 = vec4(1.0, 1.0, 0.0, 1.0)*mc;\r\n\t\t\t\tvec4 c2 = vec4(0.0, 1.0, 0.0, 1.0)*mc;\r\n\t\t\t\tvec4 c3 = vec4(0.0, 1.0, 1.0, 1.0)*mc;\r\n\t\t\t\tvec4 c4 = vec4(0.0, 0.0, 1.0, 1.0)*mc;\r\n\t\t\t\tvec4 c5 = vec4(1.0, 0.0, 1.0, 1.0)*mc;\r\n\t\t\t\tvec4 c6 = vec4(1.0, 1.0, 1.0, 1.0)*mc;\r\n\t\t\t\tvec4 c7 = vec4(0.8, 0.8, 0.8, 1.0)*mc;\r\n\t\t\t\tvec4 c8 = vec4(0.6, 0.6, 0.6, 1.0)*mc;\r\n\t\t\t\tvec4 c9 = vec4(0.4, 0.4, 0.4, 1.0)*mc;\r\n\t\t\t\t//*/\r\n\t\t\t\t\r\n\t\t\t\t/*\r\n\t\t\t\tif(int(id)==0) { gl_FragColor = c0; return; }\r\n\t\t\t\tif(int(id)==1) { gl_FragColor = c1; return; }\r\n\t\t\t\tif(int(id)==2) { gl_FragColor = c2; return; }\r\n\t\t\t\tif(int(id)==3) { gl_FragColor = c3; return; }\r\n\t\t\t\tif(int(id)==4) { gl_FragColor = c4; return; }\r\n\t\t\t\tif(int(id)==5) { gl_FragColor = c5; return; }\r\n\t\t\t\tif(int(id)==6) { gl_FragColor = c6; return; }\r\n\t\t\t\tif(int(id)==7) { gl_FragColor = c7; return; }\r\n\t\t\t\tif(int(id)==8) { gl_FragColor = c8; return; }\r\n\t\t\t\tif(int(id)==9) { gl_FragColor = c9; return; }\r\n\t\t\t\t\r\n\t\t\t\tgl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);\r\n\t\t\t\treturn;\r\n\t\t\t\t//*/\r\n\t\t\t\t\r\n\t\t\t\t/*\r\n\t\t\t\tfloat b = (field / PARTICLE_LENGTH) + 0.2;\r\n\t\t\t\tc0.xyz *= b;\r\n\t\t\t\tc1.xyz *= b;\r\n\t\t\t\tc2.xyz *= b;\r\n\t\t\t\tc3.xyz *= b;\r\n\t\t\t\tc4.xyz *= b;\r\n\t\t\t\tc5.xyz *= b;\r\n\t\t\t\tc6.xyz *= b;\r\n\t\t\t\t\r\n\t\t\t\tfield = id;\r\n\t\t\t\t\r\n\t\t\t\t//*/\r\n\t\t\t\t/*\r\n\t\t\t\tvec4 c0 = vec4(1.0,0.0,0.0, 1.0);        \r\n\t\t\t\tvec4 c1 = vec4(dv*1.0, 1.0, dv*1.0, 1.0);\r\n\t\t\t\tvec4 c2 = vec4(dv*2.0, 0.0, dv*2.0, 1.0);\r\n\t\t\t\tvec4 c3 = vec4(dv*3.0, 0.0, dv*3.0, 1.0);\r\n\t\t\t\tvec4 c4 = vec4(dv*4.0, 0.0, dv*4.0, 1.0);\r\n\t\t\t\tvec4 c5 = vec4(dv*5.0, 0.0, dv*5.0, 1.0);\r\n\t\t\t\tvec4 c6 = vec4(1.0, 0.0, 1.0, 1.0);      \r\n\t\t\t\t//*/\r\n\t\t\t\t/*\r\n\t\t\t\tif(int(field)==0) { gl_FragColor = c0; return; }\r\n\t\t\t\tif(int(field)==1) { gl_FragColor = c1; return; }\r\n\t\t\t\tif(int(field)==2) { gl_FragColor = c2; return; }\r\n\t\t\t\tif(int(field)==3) { gl_FragColor = c3; return; }\r\n\t\t\t\tif(int(field)==4) { gl_FragColor = c4; return; }\r\n\t\t\t\tif(int(field)==5) { gl_FragColor = c5; return; }\r\n\t\t\t\tif(int(field)==6) { gl_FragColor = c6; return; }\r\n\t\t\t\t\r\n\t\t\t\tgl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);\r\n\t\t\t\treturn;\r\n\t\t\t\t//*/\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t\r\n\t\t\t\t//gl_FragColor = vec4(1.0,1.0,0.0,1.0);\t\t\t\treturn;\r\n\t\t\t\t//if(id >= SystemEmission) { gl_FragColor = vec4(0.0,0.0,0.0,1.0); return; }\r\n\t\t\t\t\r\n\t\t\t\tint   state\t\t = SystemState;\r\n\t\t\t\t\r\n\t\t\t\tvec4  status\t = ParticleStatus();\r\n\t\t\t\tvec4  data\t\t = texture2D(Data,iterator);\r\n\t\t\t\t\r\n\t\t\t\tgl_FragColor \t = data;\r\n\t\t\t\t\r\n\t\t\t\tif(state == STATE_NONE) return;\r\n\t\t\t\t\r\n\t\t\t\tint field_id        = int(field);\r\n\t\t\t\t\r\n\t\t\t\tif(field_id == PARTICLE_STATUS) \t{ gl_FragColor = UpdateStatus(state,data);\t\t\t   \treturn; }\r\n\t\t\t\tif(field_id == PARTICLE_POSITION) \t{ gl_FragColor = UpdatePosition(state,status,data); \treturn; }\t\t\t\t\r\n\t\t\t\tif(field_id == PARTICLE_ROTATION) \t{ gl_FragColor = UpdateRotation(state,status,data); \treturn; }\t\t\t\t\r\n\t\t\t\tif(field_id == PARTICLE_SIZE)\t \t{ gl_FragColor = UpdateSize(state,status,data); \t \treturn; }\t\t\t\t\r\n\t\t\t\tif(field_id == PARTICLE_VELOCITY)\t{ gl_FragColor = UpdateVelocity(state,status,data); \treturn; }\r\n\t\t\t\tif(field_id == PARTICLE_COLOR)\t\t{ gl_FragColor = UpdateColor(state,status,data); \t \treturn; }\r\n\t\t\t\tif(field_id == PARTICLE_START)\t\t{ gl_FragColor = UpdateStart(state, status, data); \t \treturn; }\r\n\t\t\t\tif(field_id == PARTICLE_NULL)\t\t{ gl_FragColor = vec4(1,0,1,1);\t\t\t\t\t \t \treturn; }\r\n\t\t\t\t\r\n\t\t\t}\r\n\t\t\t\r\n\t\t</fragment>\t\r\n\t</shader>\r\n\t";
+js_Boot.__toStr = {}.toString;
+js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
 dungeon_Main.main();
 })();

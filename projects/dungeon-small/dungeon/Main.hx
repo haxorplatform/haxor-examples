@@ -100,10 +100,7 @@ import js.Browser;
 class Main extends Application implements IUpdateable implements IRenderable
 {
 	
-	static public function main():Void 
-	{ 
-		EntryPoint.Initialize();
-	}
+	static public function main():Void {EntryPoint.Initialize(); }
 	
 	public var cam : Camera;
 	
@@ -137,8 +134,7 @@ class Main extends Application implements IUpdateable implements IRenderable
 	
 	override function OnBuild():Void
 	{
-		super.OnBuild();
-				
+		super.OnBuild();				
 	}
 	
 	
@@ -241,7 +237,7 @@ class Main extends Application implements IUpdateable implements IRenderable
 			debug = !debug;
 			if (!debug)
 			{
-				field.innerText = "";				
+				field.textContent = "";				
 			}
 			//game.orbit.follow = !debug;
 			ui.domElement.style.display = debug ? "block" : "none";
